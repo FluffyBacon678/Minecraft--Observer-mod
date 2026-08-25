@@ -1,0 +1,7 @@
+{
+  "required": true,
+  "package": "com.fluffybacon.observercam.client.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": ["CameraMixin", "GameRendererMixin"],
+  "injectors": {"defaultRequire": 1}
+}
