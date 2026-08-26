@@ -23,6 +23,7 @@ The next useful step is a real gameplay pass with the freshly built jar. Begin w
 - Rejoining with the setting enabled creates or resumes exactly one Observer for the player.
 - Repeatedly enabling the cameraman or using summon commands before re-enabling still converges to exactly one assigned Observer.
 - **Recording (Planned)** defaults to a 3 GB storage cap and clearly states that recording is not implemented.
+- Clicking **Video output folder** opens a native folder chooser. Cancelling preserves the old path; selecting a folder updates the button and survives restarting the client.
 
 ## Core experience checks
 
@@ -50,6 +51,7 @@ Watch for the following rather than only checking whether the feature functions:
 - Is there useful world context behind and around the player?
 - Does the Observer hold a decent shot for several seconds and introduce alternate angles only occasionally instead of constantly swapping sides?
 - Are ordinary corrections smooth and visibly flown rather than teleported?
+- In Observer POV, does the camera remain fluid between game ticks at high frame rates, without a tiny 20 TPS stepping sensation?
 - Does it close in naturally indoors and widen the shot outdoors?
 - Does it recover promptly from a blocked view without clipping through walls?
 

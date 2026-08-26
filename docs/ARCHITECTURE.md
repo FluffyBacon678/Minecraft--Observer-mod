@@ -8,7 +8,7 @@ The client renderer submits Minecraft's existing `Blocks.OBSERVER` moving-block 
 
 ## Authoritative camera transform
 
-`CameraTransform` is the only place that defines Observer camera geometry. It interpolates the physical block center, calculates Minecraft's yaw/pitch forward vector, and moves the origin 0.515 blocks outside the observing face. `CameraMixin` applies that origin after vanilla camera setup. Rendering and aiming use the same entity rotations, so the visible face and POV cannot drift apart.
+`CameraTransform` is the only place that defines Observer camera geometry. It interpolates the physical block center, calculates Minecraft's yaw/pitch forward vector, and moves the origin 0.515 blocks outside the observing face. `CameraMixin` applies that origin after vanilla camera setup. `ObserverCameraSmoother` then applies a render-rate, time-based low-pass filter to the base position and wrapped yaw/pitch, removing visible 20 TPS stepping without changing the server-authoritative entity. Large teleports and long frame gaps reset the filter immediately. The POV origin and view direction come from the same smoothed transform, keeping the client camera internally aligned.
 
 `ObserverPovController` sets the Observer as Minecraft's camera entity while leaving `Minecraft.player` unchanged. `LocalPlayerMixin` keeps the real player recognized as the controlled camera owner, preserving movement, mining, placement, inventory, and interaction input. `LevelRendererMixin` explicitly extracts the local player's render state while Observer POV is active and suppresses only its floating name tag. The controller remembers the previous perspective and restores it whenever POV is toggled off, the Observer becomes invalid, or the connection closes.
 
@@ -45,8 +45,8 @@ The Mod Menu landing page exposes both **Cameraman enabled** and **Enter/Exit Ob
 
 ## Future recording storage boundary
 
-Recording remains outside this MVP. `RecordingStorageBudget` is a deliberately small guard for a future writer: it measures existing files without loading them into memory, converts the configured gigabyte limit to bytes, reports remaining capacity, and rejects allocations that would cross the cap. The default is 3 GB and the Mod Menu range is 0.5–100 GB. No recording directory or recording data is created by the current mod.
+Recording remains outside this MVP. `RecordingStorageBudget` is a deliberately small guard for a future writer: it measures existing files without loading them into memory, converts the configured gigabyte limit to bytes, reports remaining capacity, and rejects allocations that would cross the cap. The default is 3 GB and the Mod Menu range is 0.5–100 GB. The client persists a selected video output directory through a native folder chooser; an empty setting resolves to `observercam/recordings` inside the active game directory. No recording data is created by the current mod. The implementation sequence is defined in `docs/RECORDING_PLAN.md`.
 
 ## Performance boundaries
 
-Planning is fixed at five times per second; motion and safety checks run once per game tick; entity position and rotation are interpolated by vanilla every frame. Candidate probes only examine loaded chunks around the target. No pathfinder, chunk loader, image analysis, recorder, encoder, or background worker is present.
+Planning is fixed at five times per second; motion and safety checks run once per game tick; vanilla entity interpolation is followed by a lightweight client-only render-rate camera filter. Candidate probes only examine loaded chunks around the target. No pathfinder, chunk loader, image analysis, recorder, encoder, or background worker is present.

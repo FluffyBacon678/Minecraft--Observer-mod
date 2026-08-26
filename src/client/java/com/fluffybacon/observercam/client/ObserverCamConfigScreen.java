@@ -187,6 +187,7 @@ public final class ObserverCamConfigScreen extends Screen {
                         bool("allow_front_shots", () -> c.allowFrontFacingShots, v -> c.allowFrontFacingShots = v)
                 );
                 case STORAGE -> List.of(
+                        directory("recording_output_directory"),
                         number("recording_storage_limit", "gigabytes", 0.5, 100, 1,
                                 () -> c.recordingStorageLimitGb, v -> c.recordingStorageLimitGb = v)
                 );
@@ -215,7 +216,11 @@ public final class ObserverCamConfigScreen extends Screen {
         return new BooleanSetting(key, getter, setter);
     }
 
-    private sealed interface Setting permits NumberSetting, BooleanSetting {
+    private static DirectorySetting directory(String key) {
+        return new DirectorySetting(key);
+    }
+
+    private sealed interface Setting permits NumberSetting, BooleanSetting, DirectorySetting {
         String key();
 
         default Component label() {
@@ -232,6 +237,9 @@ public final class ObserverCamConfigScreen extends Screen {
     }
 
     private record BooleanSetting(String key, BooleanSupplier getter, BooleanConsumer setter) implements Setting {
+    }
+
+    private record DirectorySetting(String key) implements Setting {
     }
 
     @FunctionalInterface
@@ -266,6 +274,16 @@ public final class ObserverCamConfigScreen extends Screen {
                             .bounds(x, y, CONTENT_WIDTH, 20)
                             .build();
                     addRenderableWidget(toggle);
+                } else if (setting instanceof DirectorySetting directory) {
+                    Button browse = Button.builder(directoryText(directory), button ->
+                            RecordingDirectoryPicker.choose(() -> {
+                                    button.setMessage(directoryText(directory));
+                                    button.setTooltip(directoryTooltip(directory));
+                                }))
+                            .tooltip(directoryTooltip(directory))
+                            .bounds(x, y, CONTENT_WIDTH, 20)
+                            .build();
+                    addRenderableWidget(browse);
                 }
                 y += 24;
             }
@@ -276,6 +294,20 @@ public final class ObserverCamConfigScreen extends Screen {
 
         private static Component toggleText(BooleanSetting setting) {
             return ObserverCamConfigScreen.toggleText(setting);
+        }
+
+        private static Component directoryText(DirectorySetting setting) {
+            var outputPath = ObserverCamConfig.get().recordingOutputPath();
+            var fileName = outputPath.getFileName();
+            String displayName = fileName == null ? outputPath.toString() : fileName.toString();
+            return Component.translatable("observercam.config.value", setting.label(),
+                    Component.literal(displayName));
+        }
+
+        private static Tooltip directoryTooltip(DirectorySetting setting) {
+            return Tooltip.create(setting.tooltip().copy()
+                    .append("\n")
+                    .append(ObserverCamConfig.get().recordingOutputPath().toString()));
         }
 
         @Override

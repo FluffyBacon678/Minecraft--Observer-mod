@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 
 public final class ObserverCamConfig {
@@ -41,6 +42,7 @@ public final class ObserverCamConfig {
     public boolean cameramanEnabled = false;
 
     public double recordingStorageLimitGb = 3.0;
+    public String recordingOutputDirectory = "";
 
     public boolean debugHud = false;
     public boolean showCandidatePositions = false;
@@ -82,6 +84,14 @@ public final class ObserverCamConfig {
     public void reset() {
         instance = new ObserverCamConfig();
         instance.save();
+    }
+
+    public Path recordingOutputPath() {
+        return resolveRecordingOutputDirectory(recordingOutputDirectory, gameDirectory());
+    }
+
+    public void setRecordingOutputDirectory(Path directory) {
+        recordingOutputDirectory = directory.toAbsolutePath().normalize().toString();
     }
 
     /**
@@ -171,6 +181,9 @@ public final class ObserverCamConfig {
         preferredPlayerScreenSize = clamp(preferredPlayerScreenSize, 0.15, 0.65);
         movementPredictionTicks = clamp(movementPredictionTicks, 0.0, 12.0);
         recordingStorageLimitGb = clamp(recordingStorageLimitGb, 0.5, 100.0);
+        if (recordingOutputDirectory == null) {
+            recordingOutputDirectory = "";
+        }
     }
 
     private static double clamp(double value, double min, double max) {
@@ -179,6 +192,19 @@ public final class ObserverCamConfig {
 
     private static double finiteOr(double value, double fallback) {
         return Double.isFinite(value) ? value : fallback;
+    }
+
+    static Path resolveRecordingOutputDirectory(String configured, Path gameDirectory) {
+        Path defaultDirectory = gameDirectory.resolve("observercam").resolve("recordings").normalize();
+        if (configured == null || configured.isBlank()) {
+            return defaultDirectory;
+        }
+        try {
+            Path selected = Path.of(configured.trim());
+            return (selected.isAbsolute() ? selected : gameDirectory.resolve(selected)).normalize();
+        } catch (InvalidPathException ignored) {
+            return defaultDirectory;
+        }
     }
 
     public record CameraSettings(
@@ -211,6 +237,14 @@ public final class ObserverCamConfig {
             return FabricLoader.getInstance().getConfigDir().resolve("observercam.json");
         } catch (RuntimeException ignored) {
             return Path.of("config", "observercam.json");
+        }
+    }
+
+    private static Path gameDirectory() {
+        try {
+            return FabricLoader.getInstance().getGameDir();
+        } catch (RuntimeException ignored) {
+            return Path.of(".").toAbsolutePath().normalize();
         }
     }
 }

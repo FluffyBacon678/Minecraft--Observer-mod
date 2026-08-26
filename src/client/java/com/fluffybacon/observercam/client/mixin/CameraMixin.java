@@ -1,6 +1,7 @@
 package com.fluffybacon.observercam.client.mixin;
 
 import com.fluffybacon.observercam.camera.CameraTransform;
+import com.fluffybacon.observercam.client.ObserverCameraSmoother;
 import com.fluffybacon.observercam.entity.ObserverCameraEntity;
 import net.minecraft.client.Camera;
 import net.minecraft.world.entity.Entity;
@@ -17,11 +18,16 @@ public abstract class CameraMixin {
     @Shadow
     protected abstract void setPosition(Vec3 position);
 
+    @Shadow
+    protected abstract void setRotation(float yaw, float pitch);
+
     @Inject(method = "setup", at = @At("TAIL"))
     private void observercam$useObserverFace(Level level, Entity entity, boolean detached, boolean inverseView,
                                             float partialTick, CallbackInfo callbackInfo) {
         if (entity instanceof ObserverCameraEntity observer && !detached) {
-            setPosition(CameraTransform.from(observer, partialTick).origin());
+            CameraTransform transform = ObserverCameraSmoother.sample(observer, partialTick);
+            setRotation(transform.yaw(), transform.pitch());
+            setPosition(transform.origin());
         }
     }
 }

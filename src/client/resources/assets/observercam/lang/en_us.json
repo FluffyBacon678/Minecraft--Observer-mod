@@ -81,6 +81,9 @@
 
   "observercam.config.setting.recording_storage_limit": "Recording storage cap",
   "observercam.config.setting.recording_storage_limit.tooltip": "Maximum disk space future Observer Cam recordings may use. Recording is not implemented yet.",
+  "observercam.config.setting.recording_output_directory": "Video output folder",
+  "observercam.config.setting.recording_output_directory.tooltip": "Choose the folder where Observer Cam will save video files. Click to browse.",
+  "observercam.config.recording_output.choose": "Choose Observer Cam video folder",
 
   "observercam.config.setting.debug_hud": "Debug HUD",
   "observercam.config.setting.debug_hud.tooltip": "Shows the director state, target, score, visibility, distance, and movement data while in Observer POV.",

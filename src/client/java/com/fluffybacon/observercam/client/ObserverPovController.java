@@ -56,6 +56,7 @@ public final class ObserverPovController {
 
         previousCameraType = client.options.getCameraType();
         activeObserver = observer.getUUID();
+        ObserverCameraSmoother.reset();
         client.options.setCameraType(CameraType.FIRST_PERSON);
         client.setCameraEntity(observer);
         client.levelRenderer.needsUpdate();
@@ -107,6 +108,7 @@ public final class ObserverPovController {
         }
         activeObserver = null;
         retryTicks = 0;
+        ObserverCameraSmoother.reset();
         if (client.player != null) {
             client.setCameraEntity(client.player);
         }

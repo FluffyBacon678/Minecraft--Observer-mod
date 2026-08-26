@@ -46,7 +46,7 @@ Normal movement is acceleration- and speed-limited. The Observer checks its full
 
 Open **Mods → Observer Cam → Configure** when Mod Menu is installed. Quick cameraman and POV actions appear first; Camera, Movement, Cinematography, Behavior, Recording (Planned), and Debug settings use a compact two-column category layout below them. Settings are saved to `config/observercam.json` and applied live when safe. Camera behavior settings are validated and synchronized as a per-player snapshot, so one player's preferences cannot overwrite another player's director on a dedicated server. Hover any control for a plain-language explanation; numeric settings display their units, and **Reset Defaults** asks for confirmation before replacing the configuration.
 
-Observer Cam does not record video in this MVP. A storage-budget guard is nevertheless present for that future subsystem and defaults to **3 GB**. Any future recording writer must check this guard before allocating data, so the configured cap cannot be silently exceeded.
+Observer Cam does not record video in this MVP. The **Recording (Planned)** page already lets you choose the future video output folder and includes a storage-budget guard that defaults to **3 GB**. An empty folder setting resolves to `observercam/recordings` inside the current game directory. Any future recording writer must check the guard before allocating data, so the configured cap cannot be silently exceeded. See the [recording plan](docs/RECORDING_PLAN.md) for the staged implementation.
 
 The debug HUD reports the current director state, distance, target, visibility, score, indoor estimate, speed, and candidate count. Debug candidate/raycast visualization uses colored particles:
 
@@ -67,4 +67,4 @@ The distributable jar is written to `build/libs/observercam-0.1.0.jar`.
 
 The supplied project artwork is packaged as the Mod Menu icon at `src/client/resources/assets/observercam/icon.png`; the same original-resolution PNG can be uploaded as the Modrinth project thumbnail.
 
-See [Testing](docs/TESTING.md) for the recommended hands-on pass, [Architecture](docs/ARCHITECTURE.md) for implementation details, and [Research](docs/RESEARCH.md) for source-review notes.
+See [Testing](docs/TESTING.md) for the recommended hands-on pass, [Architecture](docs/ARCHITECTURE.md) for implementation details, [Recording plan](docs/RECORDING_PLAN.md) for the video roadmap, and [Research](docs/RESEARCH.md) for source-review notes.

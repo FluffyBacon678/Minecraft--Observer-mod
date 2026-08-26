@@ -2,11 +2,17 @@ package com.fluffybacon.observercam.config;
 
 import com.fluffybacon.observercam.config.ObserverCamConfig.CameraSettings;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
 class ObserverCamConfigTest {
+    @TempDir
+    Path gameDirectory;
+
     @Test
     void clientCameraSettingsAreFiniteAndClampedBeforeServerUse() {
         CameraSettings untrusted = new CameraSettings(
@@ -32,5 +38,15 @@ class ObserverCamConfigTest {
         assertEquals(12.0, config.movementPredictionTicks);
         assertFalse(config.followTargetAutomatically);
         assertFalse(config.allowFrontFacingShots);
+    }
+
+    @Test
+    void recordingDirectoryUsesSafeDefaultAndResolvesRelativeChoices() {
+        assertEquals(gameDirectory.resolve("observercam").resolve("recordings"),
+                ObserverCamConfig.resolveRecordingOutputDirectory("", gameDirectory));
+        assertEquals(gameDirectory.resolve("captures"),
+                ObserverCamConfig.resolveRecordingOutputDirectory("captures", gameDirectory));
+        assertEquals(gameDirectory.resolve("observercam").resolve("recordings"),
+                ObserverCamConfig.resolveRecordingOutputDirectory("bad\0path", gameDirectory));
     }
 }
