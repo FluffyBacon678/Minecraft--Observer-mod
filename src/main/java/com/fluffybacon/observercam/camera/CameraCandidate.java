@@ -14,6 +14,10 @@ public record CameraCandidate(
         double score
 ) {
     public boolean valid() {
+        return clear && pathClear && visibleSamples > 0;
+    }
+
+    public boolean safeTeleportDestination() {
         return clear && visibleSamples > 0;
     }
 }

@@ -21,6 +21,7 @@ import org.jspecify.annotations.Nullable;
 import java.util.UUID;
 
 public final class ObserverCameraEntity extends Entity {
+    private static final EntityDataAccessor<String> OWNER_UUID = SynchedEntityData.defineId(ObserverCameraEntity.class, EntityDataSerializers.STRING);
     private static final EntityDataAccessor<String> TARGET_UUID = SynchedEntityData.defineId(ObserverCameraEntity.class, EntityDataSerializers.STRING);
     private static final EntityDataAccessor<Boolean> FOLLOWING = SynchedEntityData.defineId(ObserverCameraEntity.class, EntityDataSerializers.BOOLEAN);
     private static final EntityDataAccessor<String> CAMERA_STATE = SynchedEntityData.defineId(ObserverCameraEntity.class, EntityDataSerializers.STRING);
@@ -41,6 +42,7 @@ public final class ObserverCameraEntity extends Entity {
 
     @Override
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
+        builder.define(OWNER_UUID, "");
         builder.define(TARGET_UUID, "");
         builder.define(FOLLOWING, false);
         builder.define(CAMERA_STATE, CameraState.HOLD.name());
@@ -62,6 +64,12 @@ public final class ObserverCameraEntity extends Entity {
 
         Entity target = getTarget();
         if (target == null || !target.isAlive()) {
+            Entity owner = getOwner();
+            if (owner != null && owner.isAlive() && !owner.getUUID().equals(getTargetUuid())) {
+                setTarget(owner);
+                missingTargetTicks = 0;
+                return;
+            }
             if (!getTargetUuidString().isEmpty() && ++missingTargetTicks > 100) {
                 discard();
             }
@@ -79,8 +87,10 @@ public final class ObserverCameraEntity extends Entity {
     private void moveToTargetLevel(ServerPlayer target) {
         ServerLevel targetLevel = target.level();
         ObserverCameraEntity replacement = new ObserverCameraEntity(ObserverCam.OBSERVER_CAMERA, targetLevel);
+        UUID ownerUuid = getOwnerUuid();
+        replacement.setOwner(ownerUuid != null ? ownerUuid : target.getUUID());
         replacement.setTarget(target);
-        replacement.setFollowing(true);
+        replacement.setFollowing(isFollowing());
         Vec3 destination = target.position().add(0.0, 2.0, 0.0).subtract(target.getLookAngle().scale(8.0));
         replacement.snapTo(destination);
         targetLevel.addFreshEntity(replacement);
@@ -91,13 +101,30 @@ public final class ObserverCameraEntity extends Entity {
         entityData.set(TARGET_UUID, target.getUUID().toString());
     }
 
+    public void setOwner(UUID ownerUuid) {
+        entityData.set(OWNER_UUID, ownerUuid.toString());
+    }
+
+    @Nullable
+    public UUID getOwnerUuid() {
+        return parseUuid(entityData.get(OWNER_UUID));
+    }
+
+    public boolean isOwnedBy(UUID playerUuid) {
+        return playerUuid.equals(getOwnerUuid());
+    }
+
     public void clearTarget() {
         entityData.set(TARGET_UUID, "");
     }
 
     @Nullable
     public UUID getTargetUuid() {
-        String value = getTargetUuidString();
+        return parseUuid(getTargetUuidString());
+    }
+
+    @Nullable
+    private static UUID parseUuid(String value) {
         if (value.isEmpty()) {
             return null;
         }
@@ -111,6 +138,18 @@ public final class ObserverCameraEntity extends Entity {
     @Nullable
     public Entity getTarget() {
         UUID uuid = getTargetUuid();
+        if (uuid == null) {
+            return null;
+        }
+        if (level() instanceof ServerLevel serverLevel) {
+            return serverLevel.getServer().getPlayerList().getPlayer(uuid);
+        }
+        return level().getPlayerByUUID(uuid);
+    }
+
+    @Nullable
+    private Entity getOwner() {
+        UUID uuid = getOwnerUuid();
         if (uuid == null) {
             return null;
         }
@@ -173,6 +212,7 @@ public final class ObserverCameraEntity extends Entity {
 
     @Override
     protected void readAdditionalSaveData(ValueInput input) {
+        entityData.set(OWNER_UUID, input.getStringOr("ObserverCamOwner", ""));
         entityData.set(TARGET_UUID, input.getStringOr("ObserverCamTarget", ""));
         entityData.set(FOLLOWING, input.getBooleanOr("ObserverCamFollowing", false));
         setNoGravity(true);
@@ -181,6 +221,7 @@ public final class ObserverCameraEntity extends Entity {
 
     @Override
     protected void addAdditionalSaveData(ValueOutput output) {
+        output.putString("ObserverCamOwner", entityData.get(OWNER_UUID));
         output.putString("ObserverCamTarget", getTargetUuidString());
         output.putBoolean("ObserverCamFollowing", isFollowing());
     }

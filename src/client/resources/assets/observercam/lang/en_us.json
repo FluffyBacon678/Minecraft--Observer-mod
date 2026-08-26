@@ -9,10 +9,14 @@
   "observercam.config.value": "%s: %s",
   "observercam.config.on": "On",
   "observercam.config.off": "Off",
+  "observercam.config.pov.enter": "Enter Observer POV",
+  "observercam.config.pov.exit": "Exit Observer POV",
+  "observercam.config.pov.cancel": "Cancel POV Request",
+  "observercam.config.pov.tooltip": "Switch between your normal view and the camera on the Observer's observing face. You keep controlling your player.",
   "observercam.config.reset": "Reset Defaults",
   "observercam.config.reset.tooltip": "Restore every Observer Cam setting to its recommended default.",
   "observercam.config.reset.confirm.title": "Reset Observer Cam settings?",
-  "observercam.config.reset.confirm.message": "This replaces all current camera, movement, cinematography, behavior, and debug settings.",
+  "observercam.config.reset.confirm.message": "This restores every Observer Cam setting to its recommended default.",
 
   "observercam.config.category.camera": "Camera",
   "observercam.config.category.camera.tooltip": "Shot distance, framing height, and Observer POV field of view.",
@@ -71,7 +75,7 @@
   "observercam.config.setting.cameraman_enabled": "Cameraman enabled",
   "observercam.config.setting.cameraman_enabled.tooltip": "While connected to a world, On creates or resumes your Observer cameraman and Off dismisses it.",
   "observercam.config.setting.follow_automatically": "Follow target automatically",
-  "observercam.config.setting.follow_automatically.tooltip": "Newly summoned Observers begin directing and following their assigned target immediately.",
+  "observercam.config.setting.follow_automatically.tooltip": "When enabled, your Observer directs and follows its assigned target; turn it off to leave the camera parked.",
   "observercam.config.setting.allow_front_shots": "Allow front-facing shots",
   "observercam.config.setting.allow_front_shots.tooltip": "Allows angles in front of the player's movement direction. Disable for mostly rear and side shots.",
 
@@ -98,5 +102,18 @@
   "observercam.config.unit.score": " points",
   "observercam.config.unit.percent": "%",
   "observercam.config.unit.ticks": " ticks",
-  "observercam.config.unit.gigabytes": " GB"
+  "observercam.config.unit.gigabytes": " GB",
+
+  "observercam.message.cameraman.enabled": "Observer cameraman enabled.",
+  "observercam.message.cameraman.disabled": "Observer cameraman disabled.",
+  "observercam.message.pov.enabled": "Observer POV enabled.",
+  "observercam.message.pov.disabled": "Observer POV disabled.",
+  "observercam.message.pov.cancelled": "Observer POV request cancelled.",
+  "observercam.message.pov.unavailable": "No Observer cameraman is available. Enable it in Mod Menu first.",
+  "observercam.message.pov.lost": "Observer POV ended because the cameraman is no longer available.",
+  "observercam.message.command.summoned": "Observer cameraman summoned.",
+  "observercam.message.command.no_nearby": "You do not have an Observer cameraman.",
+  "observercam.message.command.targeting": "Observer now targets %s.",
+  "observercam.message.command.following": "Observer is following you.",
+  "observercam.message.command.dismissed": "Observer cameraman dismissed."
 }

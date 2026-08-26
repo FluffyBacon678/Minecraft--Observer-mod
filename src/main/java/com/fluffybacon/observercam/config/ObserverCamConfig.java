@@ -84,6 +84,72 @@ public final class ObserverCamConfig {
         instance.save();
     }
 
+    /**
+     * Returns the camera-director settings that are safe to send to a server.
+     * Client-only debug and storage preferences are intentionally excluded.
+     */
+    public CameraSettings cameraSettings() {
+        clamp();
+        return new CameraSettings(
+                outdoorDistance,
+                indoorDistance,
+                minimumDistance,
+                maximumDistance,
+                cameraHeight,
+                cameraFov,
+                maximumSpeed,
+                acceleration,
+                rotationSpeed,
+                positionSmoothing,
+                rotationSmoothing,
+                catchUpDistance,
+                emergencyTeleportDistance,
+                backgroundImportance,
+                playerVisibilityImportance,
+                shotStability,
+                reframeThreshold,
+                preferredPlayerScreenSize,
+                movementPredictionTicks,
+                followTargetAutomatically,
+                allowFrontFacingShots
+        );
+    }
+
+    /**
+     * Builds an isolated, validated runtime configuration from an untrusted
+     * client snapshot. Invalid floating-point values fall back to defaults.
+     */
+    public static ObserverCamConfig fromCameraSettings(CameraSettings settings) {
+        ObserverCamConfig config = new ObserverCamConfig();
+        config.outdoorDistance = finiteOr(settings.outdoorDistance(), config.outdoorDistance);
+        config.indoorDistance = finiteOr(settings.indoorDistance(), config.indoorDistance);
+        config.minimumDistance = finiteOr(settings.minimumDistance(), config.minimumDistance);
+        config.maximumDistance = finiteOr(settings.maximumDistance(), config.maximumDistance);
+        config.cameraHeight = finiteOr(settings.cameraHeight(), config.cameraHeight);
+        config.cameraFov = finiteOr(settings.cameraFov(), config.cameraFov);
+        config.maximumSpeed = finiteOr(settings.maximumSpeed(), config.maximumSpeed);
+        config.acceleration = finiteOr(settings.acceleration(), config.acceleration);
+        config.rotationSpeed = finiteOr(settings.rotationSpeed(), config.rotationSpeed);
+        config.positionSmoothing = finiteOr(settings.positionSmoothing(), config.positionSmoothing);
+        config.rotationSmoothing = finiteOr(settings.rotationSmoothing(), config.rotationSmoothing);
+        config.catchUpDistance = finiteOr(settings.catchUpDistance(), config.catchUpDistance);
+        config.emergencyTeleportDistance = finiteOr(
+                settings.emergencyTeleportDistance(), config.emergencyTeleportDistance);
+        config.backgroundImportance = finiteOr(settings.backgroundImportance(), config.backgroundImportance);
+        config.playerVisibilityImportance = finiteOr(
+                settings.playerVisibilityImportance(), config.playerVisibilityImportance);
+        config.shotStability = finiteOr(settings.shotStability(), config.shotStability);
+        config.reframeThreshold = finiteOr(settings.reframeThreshold(), config.reframeThreshold);
+        config.preferredPlayerScreenSize = finiteOr(
+                settings.preferredPlayerScreenSize(), config.preferredPlayerScreenSize);
+        config.movementPredictionTicks = finiteOr(
+                settings.movementPredictionTicks(), config.movementPredictionTicks);
+        config.followTargetAutomatically = settings.followTargetAutomatically();
+        config.allowFrontFacingShots = settings.allowFrontFacingShots();
+        config.clamp();
+        return config;
+    }
+
     private void clamp() {
         outdoorDistance = clamp(outdoorDistance, 4.0, 20.0);
         indoorDistance = clamp(indoorDistance, 2.5, 10.0);
@@ -109,6 +175,35 @@ public final class ObserverCamConfig {
 
     private static double clamp(double value, double min, double max) {
         return Math.max(min, Math.min(max, value));
+    }
+
+    private static double finiteOr(double value, double fallback) {
+        return Double.isFinite(value) ? value : fallback;
+    }
+
+    public record CameraSettings(
+            double outdoorDistance,
+            double indoorDistance,
+            double minimumDistance,
+            double maximumDistance,
+            double cameraHeight,
+            double cameraFov,
+            double maximumSpeed,
+            double acceleration,
+            double rotationSpeed,
+            double positionSmoothing,
+            double rotationSmoothing,
+            double catchUpDistance,
+            double emergencyTeleportDistance,
+            double backgroundImportance,
+            double playerVisibilityImportance,
+            double shotStability,
+            double reframeThreshold,
+            double preferredPlayerScreenSize,
+            double movementPredictionTicks,
+            boolean followTargetAutomatically,
+            boolean allowFrontFacingShots
+    ) {
     }
 
     private static Path configPath() {

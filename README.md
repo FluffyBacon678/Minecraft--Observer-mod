@@ -17,15 +17,15 @@ The movement authority lives on the server, so multiplayer servers must install 
 ## Commands and controls
 
 - `/observercam summon` — creates an Observer, targeting the executing player.
-- `/observercam target <player>` — assigns the nearest Observer to a player.
+- `/observercam target <player>` — assigns your Observer to film a selected player.
 - `/observercam follow` — targets the executing player and starts following; summons an Observer if needed.
-- `/observercam dismiss` — removes the nearest Observer.
+- `/observercam dismiss` — removes your Observer.
 - `/observercam view` — toggles the executing player's Observer POV.
 - `O` — toggles Observer POV by default and can be rebound under Observer Cam controls.
 
-With Mod Menu installed, **Mods → Observer Cam → Configure → Behavior → Cameraman enabled** is the simplest lifecycle control. Switching it on creates or resumes one Observer assigned to you; switching it off dismisses your Observers and restores normal POV. The preference is applied again when you join a world. Commands remain available as testing and administration alternatives.
+With Mod Menu installed, open **Mods → Observer Cam → Configure**. The landing page now puts **Cameraman enabled** and **Enter/Exit Observer POV** at the top, so spawning the camera and looking through it does not require digging through a category. Switching the cameraman off dismisses your Observers and restores normal POV. The preference is applied again when you join a world. Commands remain available as testing and administration alternatives.
 
-If the viewed Observer is removed, unloaded, or changes dimension, the camera immediately returns to the real player. Player input is never transferred to the Observer.
+If the viewed Observer is removed, unloaded, changes dimension, or the connection closes, the camera safely returns to the real player. Player input remains attached to the player while Observer POV is active.
 
 ## Cameraman behavior
 
@@ -38,11 +38,13 @@ The director plans a shot every four game ticks and moves every tick. It generat
 - five inexpensive background-depth rays;
 - continuity, minimum shot duration, and a side-switch threshold.
 
-Normal movement is acceleration- and speed-limited. Emergency repositioning is reserved for large teleports or unrecoverable separation.
+Documentary framing uses a soft central zone instead of pinning the player to the exact center pixel. Small footsteps and jumps are absorbed before the camera responds, movement direction creates natural lead room, and shot headings turn gradually. Usable angles are held for several seconds; a comparable alternate view is introduced only occasionally. Up to four nearby visible players or mobs can gently widen and bias the composition while the tracked player remains the dominant subject.
+
+Normal movement is acceleration- and speed-limited. The Observer checks its full body-width flight path, detects stalled motion, and uses a clear visible recovery position only after a blocked route, large teleport, or unrecoverable separation.
 
 ## Configuration
 
-Open **Mods → Observer Cam → Configure** when Mod Menu is installed. Camera, Movement, Cinematography, Behavior, Recording (Planned), and Debug settings are grouped into separate pages, saved to `config/observercam.json`, and applied live when safe. Hover any control for a plain-language explanation; numeric settings display their units, and **Reset Defaults** asks for confirmation before replacing the configuration.
+Open **Mods → Observer Cam → Configure** when Mod Menu is installed. Quick cameraman and POV actions appear first; Camera, Movement, Cinematography, Behavior, Recording (Planned), and Debug settings use a compact two-column category layout below them. Settings are saved to `config/observercam.json` and applied live when safe. Camera behavior settings are validated and synchronized as a per-player snapshot, so one player's preferences cannot overwrite another player's director on a dedicated server. Hover any control for a plain-language explanation; numeric settings display their units, and **Reset Defaults** asks for confirmation before replacing the configuration.
 
 Observer Cam does not record video in this MVP. A storage-budget guard is nevertheless present for that future subsystem and defaults to **3 GB**. Any future recording writer must check this guard before allocating data, so the configured cap cannot be silently exceeded.
 

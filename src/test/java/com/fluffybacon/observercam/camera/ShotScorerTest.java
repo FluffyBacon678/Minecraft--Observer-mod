@@ -28,4 +28,25 @@ class ShotScorerTest {
         assertTrue(ShotSwitchPolicy.shouldSwitch(84, 96, 60, 60, 10, false));
         assertTrue(ShotSwitchPolicy.shouldSwitch(84, 85, 1, 60, 10, true));
     }
+
+    @Test
+    void documentarySwitchWaitsThenAllowsAComparableNewView() {
+        assertFalse(ShotSwitchPolicy.shouldSwitch(84, 82, 120,
+                180, 300, 12, 5, false));
+        assertFalse(ShotSwitchPolicy.shouldSwitch(84, 82, 250,
+                180, 300, 12, 5, false));
+        assertTrue(ShotSwitchPolicy.shouldSwitch(84, 82, 300,
+                180, 300, 12, 5, false));
+    }
+
+    @Test
+    void secondarySubjectsCanBreakAnOtherwiseEqualTie() {
+        ObserverCamConfig config = new ObserverCamConfig();
+        double isolated = ShotScorer.score(true, true, 4, 8, 8, 1, 1,
+                0, 0, -1, false, config);
+        double ensemble = ShotScorer.score(true, true, 4, 8, 8, 1, 1,
+                1, 0, -1, false, config);
+
+        assertTrue(ensemble > isolated);
+    }
 }

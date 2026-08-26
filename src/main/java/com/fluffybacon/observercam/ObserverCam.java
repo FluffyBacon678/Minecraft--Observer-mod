@@ -6,11 +6,14 @@ import com.fluffybacon.observercam.entity.ObserverCameraEntity;
 import com.fluffybacon.observercam.entity.ObserverCameraManager;
 import com.fluffybacon.observercam.network.RestoreViewPayload;
 import com.fluffybacon.observercam.network.SetCameramanEnabledPayload;
+import com.fluffybacon.observercam.network.SyncCameraSettingsPayload;
 import com.fluffybacon.observercam.network.ToggleViewPayload;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
@@ -44,16 +47,24 @@ public final class ObserverCam implements ModInitializer {
         PayloadTypeRegistry.playS2C().register(ToggleViewPayload.TYPE, ToggleViewPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(RestoreViewPayload.TYPE, RestoreViewPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(SetCameramanEnabledPayload.TYPE, SetCameramanEnabledPayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(SyncCameraSettingsPayload.TYPE, SyncCameraSettingsPayload.CODEC);
+        ServerPlayNetworking.registerGlobalReceiver(SyncCameraSettingsPayload.TYPE, (payload, context) ->
+                ObserverCameraManager.syncCameraSettings(context.player(), payload.settings()));
         ServerPlayNetworking.registerGlobalReceiver(SetCameramanEnabledPayload.TYPE, (payload, context) -> {
             if (payload.enabled()) {
                 ObserverCameraManager.enableFor(context.player());
-                context.player().sendSystemMessage(Component.literal("Observer cameraman enabled."));
+                context.player().sendSystemMessage(Component.translatable("observercam.message.cameraman.enabled"));
             } else {
                 ObserverCameraManager.disableFor(context.player());
                 ServerPlayNetworking.send(context.player(), RestoreViewPayload.INSTANCE);
-                context.player().sendSystemMessage(Component.literal("Observer cameraman disabled."));
+                context.player().sendSystemMessage(Component.translatable("observercam.message.cameraman.disabled"));
             }
         });
+        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
+            ObserverCameraManager.disableFor(server, handler.player.getUUID());
+            ObserverCameraManager.clearCameraSettings(server, handler.player.getUUID());
+        });
+        ServerLifecycleEvents.SERVER_STOPPED.register(ObserverCameraManager::clearCameraSettings);
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> ObserverCamCommands.register(dispatcher));
     }
 }

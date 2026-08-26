@@ -4,6 +4,7 @@ import com.fluffybacon.observercam.ObserverCam;
 import com.fluffybacon.observercam.entity.ObserverCameraEntity;
 import net.minecraft.client.CameraType;
 import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.Component;
 
 import java.util.Comparator;
 import java.util.UUID;
@@ -23,7 +24,7 @@ public final class ObserverPovController {
         if (retryTicks > 0) {
             retryTicks = 0;
             if (client.player != null) {
-                client.player.displayClientMessage(net.minecraft.network.chat.Component.literal("Observer POV request cancelled."), true);
+                client.player.displayClientMessage(Component.translatable("observercam.message.pov.cancelled"), true);
             }
             return false;
         }
@@ -44,7 +45,9 @@ public final class ObserverPovController {
         ObserverCameraEntity observer = client.level
                 .getEntities(ObserverCam.OBSERVER_CAMERA, client.player.getBoundingBox().inflate(160.0), ObserverCameraEntity::isAlive)
                 .stream()
-                .filter(entity -> entity.getTargetUuid() == null || entity.getTargetUuid().equals(client.player.getUUID()))
+                .filter(entity -> entity.isOwnedBy(client.player.getUUID())
+                        || entity.getOwnerUuid() == null && (entity.getTargetUuid() == null
+                        || entity.getTargetUuid().equals(client.player.getUUID())))
                 .min(Comparator.comparingDouble(entity -> entity.distanceToSqr(client.player)))
                 .orElse(null);
         if (observer == null) {
@@ -56,7 +59,7 @@ public final class ObserverPovController {
         client.options.setCameraType(CameraType.FIRST_PERSON);
         client.setCameraEntity(observer);
         client.levelRenderer.needsUpdate();
-        client.player.displayClientMessage(net.minecraft.network.chat.Component.literal("Observer POV enabled."), true);
+        client.player.displayClientMessage(Component.translatable("observercam.message.pov.enabled"), true);
         return true;
     }
 
@@ -66,19 +69,19 @@ public final class ObserverPovController {
                 if (tryEnable(client)) {
                     retryTicks = 0;
                 } else if (--retryTicks == 0) {
-                    client.player.displayClientMessage(net.minecraft.network.chat.Component.literal("No Observer cameraman is available."), true);
+                    client.player.displayClientMessage(Component.translatable("observercam.message.pov.unavailable"), true);
                 }
             }
             return;
         }
         if (client.level == null || client.player == null) {
-            restore(client);
+            disconnect(client);
             return;
         }
         if (!(client.level.getEntity(activeObserver) instanceof ObserverCameraEntity observer)
                 || !observer.isAlive()
                 || observer.level() != client.player.level()) {
-            restore(client);
+            restore(client, Component.translatable("observercam.message.pov.lost"));
             return;
         }
         if (client.getCameraEntity() != observer) {
@@ -90,23 +93,37 @@ public final class ObserverPovController {
     }
 
     public void restore(Minecraft client) {
+        restore(client, Component.translatable("observercam.message.pov.disabled"));
+    }
+
+    public void disconnect(Minecraft client) {
+        restore(client, null);
+    }
+
+    private void restore(Minecraft client, Component message) {
         if (activeObserver == null) {
             retryTicks = 0;
             return;
         }
         activeObserver = null;
         retryTicks = 0;
-        client.setCameraEntity(client.player);
+        if (client.player != null) {
+            client.setCameraEntity(client.player);
+        }
         client.options.setCameraType(previousCameraType);
         if (client.levelRenderer != null) {
             client.levelRenderer.needsUpdate();
         }
-        if (client.player != null) {
-            client.player.displayClientMessage(net.minecraft.network.chat.Component.literal("Observer POV disabled."), true);
+        if (client.player != null && message != null) {
+            client.player.displayClientMessage(message, true);
         }
     }
 
     public boolean isViewing() {
         return activeObserver != null;
+    }
+
+    public boolean isRequestPending() {
+        return retryTicks > 0;
     }
 }

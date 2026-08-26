@@ -19,6 +19,7 @@ import java.util.function.DoubleSupplier;
 public final class ObserverCamConfigScreen extends Screen {
     private static final int CONTENT_WIDTH = 300;
     private final Screen parent;
+    private Button povButton;
 
     public ObserverCamConfigScreen(Screen parent) {
         super(Component.translatable("observercam.config.title"));
@@ -27,22 +28,57 @@ public final class ObserverCamConfigScreen extends Screen {
 
     @Override
     protected void init() {
-        int x = width / 2 - 100;
-        int y = 46;
-        for (Category category : Category.values()) {
+        int x = width / 2 - CONTENT_WIDTH / 2;
+        ObserverCamConfig config = ObserverCamConfig.get();
+        BooleanSetting cameraman = bool("cameraman_enabled", () -> config.cameramanEnabled,
+                ObserverCamClient::setCameramanEnabled);
+        addRenderableWidget(Button.builder(toggleText(cameraman), button -> {
+                    cameraman.setter.accept(!cameraman.getter.getAsBoolean());
+                    button.setMessage(toggleText(cameraman));
+                })
+                .tooltip(Tooltip.create(cameraman.tooltip()))
+                .bounds(x, 46, 148, 20)
+                .build());
+        povButton = addRenderableWidget(Button.builder(povText(), button -> {
+                    ObserverCamClient.togglePov();
+                    button.setMessage(povText());
+                })
+                .tooltip(Tooltip.create(Component.translatable("observercam.config.pov.tooltip")))
+                .bounds(x + 152, 46, 148, 20)
+                .build());
+        povButton.active = minecraft != null && minecraft.level != null && minecraft.player != null;
+
+        Category[] categories = Category.values();
+        for (int index = 0; index < categories.length; index++) {
+            Category category = categories[index];
+            int categoryX = x + (index % 2) * 152;
+            int categoryY = 74 + (index / 2) * 24;
             addRenderableWidget(Button.builder(category.title(), button -> minecraft.setScreen(new CategoryScreen(this, category)))
                     .tooltip(Tooltip.create(category.description()))
-                    .bounds(x, y, 200, 20)
+                    .bounds(categoryX, categoryY, 148, 20)
                     .build());
-            y += 24;
         }
         addRenderableWidget(Button.builder(Component.translatable("observercam.config.reset"), button -> confirmReset())
                 .tooltip(Tooltip.create(Component.translatable("observercam.config.reset.tooltip")))
-                .bounds(x, y + 8, 98, 20)
+                .bounds(x, 154, 148, 20)
                 .build());
         addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, button -> onClose())
-                .bounds(x + 102, y + 8, 98, 20)
+                .bounds(x + 152, 154, 148, 20)
                 .build());
+    }
+
+    private static Component toggleText(BooleanSetting setting) {
+        Component state = Component.translatable(setting.getter.getAsBoolean()
+                ? "observercam.config.on" : "observercam.config.off");
+        return Component.translatable("observercam.config.value", setting.label(), state);
+    }
+
+    private static Component povText() {
+        if (ObserverCamClient.isViewingObserver()) {
+            return Component.translatable("observercam.config.pov.exit");
+        }
+        return Component.translatable(ObserverCamClient.isPovRequestPending()
+                ? "observercam.config.pov.cancel" : "observercam.config.pov.enter");
     }
 
     private void confirmReset() {
@@ -62,12 +98,16 @@ public final class ObserverCamConfigScreen extends Screen {
     @Override
     public void onClose() {
         ObserverCamConfig.get().save();
+        ObserverCamClient.syncCameraSettings();
         minecraft.setScreen(parent);
     }
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float delta) {
-        renderBackground(graphics, mouseX, mouseY, delta);
+        if (povButton != null) {
+            povButton.setMessage(povText());
+            povButton.active = minecraft != null && minecraft.level != null && minecraft.player != null;
+        }
         graphics.drawCenteredString(font, title, width / 2, 20, 0xFFFFFFFF);
         graphics.drawCenteredString(font, Component.translatable("observercam.config.live_hint"), width / 2, 31, 0xFFAAAAAA);
         super.render(graphics, mouseX, mouseY, delta);
@@ -220,6 +260,7 @@ public final class ObserverCamConfigScreen extends Screen {
                     Button toggle = Button.builder(toggleText(bool), button -> {
                                 bool.setter.accept(!bool.getter.getAsBoolean());
                                 button.setMessage(toggleText(bool));
+                                ObserverCamClient.syncCameraSettings();
                             })
                             .tooltip(Tooltip.create(bool.tooltip()))
                             .bounds(x, y, CONTENT_WIDTH, 20)
@@ -234,20 +275,18 @@ public final class ObserverCamConfigScreen extends Screen {
         }
 
         private static Component toggleText(BooleanSetting setting) {
-            Component state = Component.translatable(setting.getter.getAsBoolean()
-                    ? "observercam.config.on" : "observercam.config.off");
-            return Component.translatable("observercam.config.value", setting.label(), state);
+            return ObserverCamConfigScreen.toggleText(setting);
         }
 
         @Override
         public void onClose() {
             ObserverCamConfig.get().save();
+            ObserverCamClient.syncCameraSettings();
             minecraft.setScreen(parent);
         }
 
         @Override
         public void render(GuiGraphics graphics, int mouseX, int mouseY, float delta) {
-            renderBackground(graphics, mouseX, mouseY, delta);
             graphics.drawCenteredString(font, title, width / 2, 20, 0xFFFFFFFF);
             graphics.drawCenteredString(font, category.description(), width / 2, 31, 0xFFAAAAAA);
             super.render(graphics, mouseX, mouseY, delta);
@@ -286,6 +325,7 @@ public final class ObserverCamConfigScreen extends Screen {
         protected void applyValue() {
             setting.setter.accept(setting.min + value * (setting.max - setting.min));
             value = normalize(setting);
+            ObserverCamClient.syncCameraSettings();
         }
     }
 }

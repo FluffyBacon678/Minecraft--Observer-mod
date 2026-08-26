@@ -6,29 +6,33 @@ The next useful step is a real gameplay pass with the freshly built jar. Begin w
 
 1. Install Minecraft Java 1.21.11, Fabric Loader 0.18.2 or newer, Fabric API, Observer Cam, and optionally Mod Menu 17.x.
 2. Use a disposable world or back up the test world.
-3. In **Mods → Observer Cam → Configure**, choose **Reset Defaults** and confirm.
-4. Open **Behavior** and switch **Cameraman enabled** on. The Observer should spawn and begin following without commands.
-5. Press `O` to enter and leave Observer POV.
+3. Run `/gamemode creative` before movement tests so camera evaluation is not interrupted by player death.
+4. In **Mods → Observer Cam → Configure**, choose **Reset Defaults** and confirm.
+5. Use **Cameraman enabled** on the configuration landing page. The Observer should spawn and begin following without commands.
+6. Use **Enter Observer POV** on that same page, then verify both it and `O` enter and leave Observer POV.
 
 ## Configuration checks
 
 - Mod Menu shows the supplied Observer Cam artwork.
-- **Configure** opens the six category pages.
+- **Configure** shows the direct cameraman and POV actions plus the six category pages in a compact two-column layout.
 - Every slider and toggle has a helpful hover description.
 - Values show useful units, including blocks, degrees, ticks, and percent.
 - Changed values survive leaving and reopening the screen.
 - Cancelling **Reset Defaults** preserves the current values; confirming it restores defaults.
 - Switching **Cameraman enabled** off dismisses the Observer and immediately restores normal POV.
 - Rejoining with the setting enabled creates or resumes exactly one Observer for the player.
+- Repeatedly enabling the cameraman or using summon commands before re-enabling still converges to exactly one assigned Observer.
 - **Recording (Planned)** defaults to a 3 GB storage cap and clearly states that recording is not implemented.
 
 ## Core experience checks
 
-In every scenario, verify that the visible Observer face matches its POV, the real player remains controllable, and pressing `O` safely returns the camera to the player.
+In every scenario, verify that the visible Observer face matches its POV, the real player remains controllable, mining/placing uses the real player's reach and highlighted target, and pressing `O` safely returns the camera to the player.
 
 - Open terrain: walk, sprint, jump, turn sharply, mine, and place blocks.
+- Ensemble shot: stand near several visible mobs or another player, then separate them around the scene. The camera should include useful nearby subjects when practical without losing or shrinking the tracked player excessively.
 - House: move through rooms and doorways.
-- Narrow hallway: walk toward and away from walls.
+- Narrow hallway: walk toward and away from walls; the Observer should hold briefly, then recover to a clear visible position rather than repeatedly pushing toward an unreachable shot across a wall.
+- Blocked route: wedge the Observer's route against a corner or close a door across its flight path. It should detect the lack of progress and recover after roughly half a second instead of remaining stuck.
 - Forest: pass behind trunks and through leaves.
 - Cave: test low ceilings, corners, and uneven floors.
 - Water: swim at the surface and underwater.
@@ -41,8 +45,10 @@ In every scenario, verify that the visible Observer face matches its POV, the re
 Watch for the following rather than only checking whether the feature functions:
 
 - Does the player remain fully or mostly visible?
+- Can the player drift naturally within the middle region instead of being locked to the exact center during every footstep and jump?
+- Do nearby visible players or mobs influence a wider documentary composition without becoming the main subject?
 - Is there useful world context behind and around the player?
-- Does the Observer hold a decent shot instead of constantly swapping sides?
+- Does the Observer hold a decent shot for several seconds and introduce alternate angles only occasionally instead of constantly swapping sides?
 - Are ordinary corrections smooth and visibly flown rather than teleported?
 - Does it close in naturally indoors and widen the shot outdoors?
 - Does it recover promptly from a blocked view without clipping through walls?

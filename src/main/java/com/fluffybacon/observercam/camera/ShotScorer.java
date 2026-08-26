@@ -25,6 +25,24 @@ public final class ShotScorer {
             boolean frontFacing,
             ObserverCamConfig config
     ) {
+        return score(clear, pathClear, visibleSamples, distance, desiredDistance, framing, backgroundDepth,
+                1.0, angleIndex, previousAngle, frontFacing, config);
+    }
+
+    public static double score(
+            boolean clear,
+            boolean pathClear,
+            int visibleSamples,
+            double distance,
+            double desiredDistance,
+            double framing,
+            double backgroundDepth,
+            double secondaryCoverage,
+            int angleIndex,
+            int previousAngle,
+            boolean frontFacing,
+            ObserverCamConfig config
+    ) {
         if (!clear || visibleSamples == 0) {
             return -1000.0;
         }
@@ -35,10 +53,11 @@ public final class ShotScorer {
                 + distanceScore * 1.8
                 + framing * 2.0
                 + backgroundDepth * 2.2 * config.backgroundImportance
+                + clamp01(secondaryCoverage) * 1.6
                 + stability * 1.4 * config.shotStability
                 + (pathClear ? 0.7 : 0.0);
         double total = 5.5 * config.playerVisibilityImportance
-                + 1.8 + 2.0 + 2.2 * config.backgroundImportance
+                + 1.8 + 2.0 + 2.2 * config.backgroundImportance + 1.6
                 + 1.4 * config.shotStability + 0.7;
         double result = 100.0 * weighted / total;
         if (frontFacing && !config.allowFrontFacingShots) {

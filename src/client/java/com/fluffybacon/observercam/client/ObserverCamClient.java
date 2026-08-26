@@ -5,6 +5,7 @@ import com.fluffybacon.observercam.client.render.ObserverCameraRenderer;
 import com.fluffybacon.observercam.config.ObserverCamConfig;
 import com.fluffybacon.observercam.network.RestoreViewPayload;
 import com.fluffybacon.observercam.network.SetCameramanEnabledPayload;
+import com.fluffybacon.observercam.network.SyncCameraSettingsPayload;
 import com.fluffybacon.observercam.network.ToggleViewPayload;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.fabricmc.api.ClientModInitializer;
@@ -31,8 +32,11 @@ public final class ObserverCamClient implements ClientModInitializer {
 
         ClientPlayNetworking.registerGlobalReceiver(ToggleViewPayload.TYPE, (payload, context) -> POV.toggle(context.client()));
         ClientPlayNetworking.registerGlobalReceiver(RestoreViewPayload.TYPE, (payload, context) -> POV.restore(context.client()));
-        ClientPlayConnectionEvents.JOIN.register((handler, sender, client) ->
-                sendCameramanEnabled(ObserverCamConfig.get().cameramanEnabled));
+        ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
+            syncCameraSettings();
+            sendCameramanEnabled(ObserverCamConfig.get().cameramanEnabled);
+        });
+        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> POV.disconnect(client));
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath(ObserverCam.MOD_ID, "debug_hud"),
                 (graphics, tickCounter) -> ObserverDebugHud.render(graphics));
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
@@ -47,7 +51,26 @@ public final class ObserverCamClient implements ClientModInitializer {
     public static void setCameramanEnabled(boolean enabled) {
         ObserverCamConfig.get().cameramanEnabled = enabled;
         ObserverCamConfig.get().save();
+        syncCameraSettings();
         sendCameramanEnabled(enabled);
+    }
+
+    public static void syncCameraSettings() {
+        if (ClientPlayNetworking.canSend(SyncCameraSettingsPayload.TYPE)) {
+            ClientPlayNetworking.send(new SyncCameraSettingsPayload(ObserverCamConfig.get().cameraSettings()));
+        }
+    }
+
+    public static void togglePov() {
+        POV.toggle(net.minecraft.client.Minecraft.getInstance());
+    }
+
+    public static boolean isViewingObserver() {
+        return POV.isViewing();
+    }
+
+    public static boolean isPovRequestPending() {
+        return POV.isRequestPending();
     }
 
     private static void sendCameramanEnabled(boolean enabled) {
