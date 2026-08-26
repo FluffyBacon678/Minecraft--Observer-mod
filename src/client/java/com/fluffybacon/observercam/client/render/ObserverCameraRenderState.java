@@ -7,4 +7,5 @@ public final class ObserverCameraRenderState extends EntityRenderState {
     public final MovingBlockRenderState block = new MovingBlockRenderState();
     public float yaw;
     public float pitch;
+    public boolean recording;
 }

@@ -29,6 +29,7 @@ public final class ObserverCameraEntity extends Entity {
     private static final EntityDataAccessor<Integer> VISIBILITY = SynchedEntityData.defineId(ObserverCameraEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Float> INDOOR = SynchedEntityData.defineId(ObserverCameraEntity.class, EntityDataSerializers.FLOAT);
     private static final EntityDataAccessor<Integer> CANDIDATE_COUNT = SynchedEntityData.defineId(ObserverCameraEntity.class, EntityDataSerializers.INT);
+    private static final EntityDataAccessor<Boolean> RECORDING = SynchedEntityData.defineId(ObserverCameraEntity.class, EntityDataSerializers.BOOLEAN);
 
     private final CameraDirector director = new CameraDirector();
     private int missingTargetTicks;
@@ -50,6 +51,7 @@ public final class ObserverCameraEntity extends Entity {
         builder.define(VISIBILITY, 0);
         builder.define(INDOOR, 0.0F);
         builder.define(CANDIDATE_COUNT, 0);
+        builder.define(RECORDING, false);
     }
 
     @Override
@@ -91,6 +93,7 @@ public final class ObserverCameraEntity extends Entity {
         replacement.setOwner(ownerUuid != null ? ownerUuid : target.getUUID());
         replacement.setTarget(target);
         replacement.setFollowing(isFollowing());
+        replacement.setRecording(isRecording());
         Vec3 destination = target.position().add(0.0, 2.0, 0.0).subtract(target.getLookAngle().scale(8.0));
         replacement.snapTo(destination);
         targetLevel.addFreshEntity(replacement);
@@ -172,6 +175,14 @@ public final class ObserverCameraEntity extends Entity {
         if (!following) {
             setDeltaMovement(Vec3.ZERO);
         }
+    }
+
+    public boolean isRecording() {
+        return entityData.get(RECORDING);
+    }
+
+    public void setRecording(boolean recording) {
+        entityData.set(RECORDING, recording);
     }
 
     public CameraState cameraState() {

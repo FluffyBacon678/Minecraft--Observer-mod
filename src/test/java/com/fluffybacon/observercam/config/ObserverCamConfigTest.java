@@ -1,6 +1,8 @@
 package com.fluffybacon.observercam.config;
 
 import com.fluffybacon.observercam.config.ObserverCamConfig.CameraSettings;
+import com.fluffybacon.observercam.recording.InstantReplayLimitMode;
+import com.fluffybacon.observercam.recording.RecordingVideoFormat;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -48,5 +50,26 @@ class ObserverCamConfigTest {
                 ObserverCamConfig.resolveRecordingOutputDirectory("captures", gameDirectory));
         assertEquals(gameDirectory.resolve("observercam").resolve("recordings"),
                 ObserverCamConfig.resolveRecordingOutputDirectory("bad\0path", gameDirectory));
+    }
+
+    @Test
+    void recordingDefaultsAreConservative() {
+        ObserverCamConfig config = new ObserverCamConfig();
+
+        assertEquals(3.0, config.recordingStorageLimitGb);
+        assertEquals(RecordingVideoFormat.MP4, config.recordingVideoFormat);
+        assertFalse(config.instantReplayEnabled);
+        assertEquals(InstantReplayLimitMode.TIME, config.instantReplayLimitMode);
+        assertEquals(2.0, config.instantReplayDurationMinutes);
+        assertEquals(1.0, config.instantReplayStorageLimitGb);
+    }
+
+    @Test
+    void recordingChoicesCyclePredictably() {
+        assertEquals(RecordingVideoFormat.MKV, RecordingVideoFormat.MP4.next());
+        assertEquals(RecordingVideoFormat.WEBM, RecordingVideoFormat.MKV.next());
+        assertEquals(RecordingVideoFormat.MP4, RecordingVideoFormat.WEBM.next());
+        assertEquals(InstantReplayLimitMode.SIZE, InstantReplayLimitMode.TIME.next());
+        assertEquals(InstantReplayLimitMode.TIME, InstantReplayLimitMode.SIZE.next());
     }
 }

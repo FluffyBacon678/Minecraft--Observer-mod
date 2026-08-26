@@ -114,6 +114,13 @@ public final class ObserverCameraManager {
         return disableFor(player.level().getServer(), player.getUUID());
     }
 
+    public static void setRecordingFor(ServerPlayer player, boolean recording) {
+        ObserverCameraEntity observer = findFor(player);
+        if (observer != null) {
+            observer.setRecording(recording);
+        }
+    }
+
     public static int disableFor(MinecraftServer server, UUID ownerUuid) {
         List<ObserverCameraEntity> owned = findAllOwnedBy(server, ownerUuid);
         owned.forEach(ObserverCameraEntity::discard);

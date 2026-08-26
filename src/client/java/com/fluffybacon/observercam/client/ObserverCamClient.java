@@ -35,8 +35,12 @@ public final class ObserverCamClient implements ClientModInitializer {
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
             syncCameraSettings();
             sendCameramanEnabled(ObserverCamConfig.get().cameramanEnabled);
+            ObserverRecordingState.sync();
         });
-        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> POV.disconnect(client));
+        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
+            POV.disconnect(client);
+            ObserverRecordingState.reset();
+        });
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath(ObserverCam.MOD_ID, "debug_hud"),
                 (graphics, tickCounter) -> ObserverDebugHud.render(graphics));
         ClientTickEvents.END_CLIENT_TICK.register(client -> {

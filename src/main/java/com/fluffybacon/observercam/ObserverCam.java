@@ -6,6 +6,7 @@ import com.fluffybacon.observercam.entity.ObserverCameraEntity;
 import com.fluffybacon.observercam.entity.ObserverCameraManager;
 import com.fluffybacon.observercam.network.RestoreViewPayload;
 import com.fluffybacon.observercam.network.SetCameramanEnabledPayload;
+import com.fluffybacon.observercam.network.SetRecordingStatePayload;
 import com.fluffybacon.observercam.network.SyncCameraSettingsPayload;
 import com.fluffybacon.observercam.network.ToggleViewPayload;
 import net.fabricmc.api.ModInitializer;
@@ -47,6 +48,7 @@ public final class ObserverCam implements ModInitializer {
         PayloadTypeRegistry.playS2C().register(ToggleViewPayload.TYPE, ToggleViewPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(RestoreViewPayload.TYPE, RestoreViewPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(SetCameramanEnabledPayload.TYPE, SetCameramanEnabledPayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(SetRecordingStatePayload.TYPE, SetRecordingStatePayload.CODEC);
         PayloadTypeRegistry.playC2S().register(SyncCameraSettingsPayload.TYPE, SyncCameraSettingsPayload.CODEC);
         ServerPlayNetworking.registerGlobalReceiver(SyncCameraSettingsPayload.TYPE, (payload, context) ->
                 ObserverCameraManager.syncCameraSettings(context.player(), payload.settings()));
@@ -60,6 +62,8 @@ public final class ObserverCam implements ModInitializer {
                 context.player().sendSystemMessage(Component.translatable("observercam.message.cameraman.disabled"));
             }
         });
+        ServerPlayNetworking.registerGlobalReceiver(SetRecordingStatePayload.TYPE, (payload, context) ->
+                ObserverCameraManager.setRecordingFor(context.player(), payload.recording()));
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
             ObserverCameraManager.disableFor(server, handler.player.getUUID());
             ObserverCameraManager.clearCameraSettings(server, handler.player.getUUID());
