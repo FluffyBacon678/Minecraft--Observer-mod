@@ -1,0 +1,32 @@
+# Changelog
+
+All notable user-facing changes to Observer Cam are recorded here.
+
+## 0.1.0-beta.1 — 2026-08-28
+
+### Added
+
+- Autonomous documentary-style Observer cameraman with indoor/outdoor shot planning, group-aware framing, collision recovery, and smoothly interpolated POV.
+- Mod Menu controls for cameraman state, POV, camera behavior, movement, cinematography, recording, video quality, instant replay, PiP, and debugging.
+- MP4/H.264, MKV/H.264, and WebM/VP9 recording through a bounded FFmpeg pipeline, with current-window, 720p, and 1080p output presets.
+- Optional, off-by-default rolling instant replay with time or size retention and an `F9` save action.
+- Optional, off-by-default 10 FPS Observer picture-in-picture monitor.
+- Configurable output directory, **Open video folder**, FFmpeg selector, 3 GB default output-folder cap, and optional Windows loopback audio.
+- Redstone-red Observer eye and compact HUD state while recording or buffering replay.
+
+### Safety and polish
+
+- Recording uses bounded queues, safe partial-file finalization, free-space checks, and private marked replay buffers that never evict completed or unrelated files.
+- Recording and PiP hotkeys are deliberately unbound by default to avoid conflicts.
+- Invalid client snapshots and corrupted local numeric settings are sanitized before use.
+- Config files are replaced atomically when the filesystem supports it.
+- PiP capture and texture cleanup are bounded and resilient across reset/disconnect paths.
+- Metadata now identifies the project owner, support links, and exact first-beta compatibility.
+
+### Known limitations
+
+- Full Observer POV is required for recording and instant replay.
+- FFmpeg remains an external requirement for video export.
+- Automatic loopback-audio selection is Windows-only and does not install a driver.
+- PiP costs a second world render and may be expensive with shaders.
+- ReplayMod/Flashback camera-track integration is deferred.

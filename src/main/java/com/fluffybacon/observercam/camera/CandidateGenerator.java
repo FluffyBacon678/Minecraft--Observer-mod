@@ -9,6 +9,7 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.entity.EntityTypeTest;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
@@ -118,7 +119,8 @@ public final class CandidateGenerator {
         Vec3 center = focus.add(0.0, cameraVerticalOffset, 0.0).add(radial.scale(distance));
         Vec3 position = center.add(0.0, -0.5, 0.0);
         Level level = observer.level();
-        boolean loaded = level.hasChunkAt(BlockPos.containing(center));
+        BlockPos centerBlock = BlockPos.containing(center);
+        boolean loaded = level.hasChunk(centerBlock.getX() >> 4, centerBlock.getZ() >> 4);
         AABB box = new AABB(center.x - 0.48, center.y - 0.48, center.z - 0.48, center.x + 0.48, center.y + 0.48, center.z + 0.48);
         boolean clear = loaded && level.noCollision(observer, box);
         Vec3 direction = focus.subtract(center).normalize();
@@ -149,8 +151,8 @@ public final class CandidateGenerator {
                 target.getBoundingBox().minY + target.getBoundingBox().getYsize() * 0.72,
                 targetPosition.z
         );
-        List<LivingEntity> nearby = level.getEntitiesOfClass(
-                        LivingEntity.class,
+        List<LivingEntity> nearby = level.getEntities(
+                        EntityTypeTest.forClass(LivingEntity.class),
                         target.getBoundingBox().inflate(SECONDARY_SUBJECT_RADIUS, 5.0, SECONDARY_SUBJECT_RADIUS),
                         entity -> entity != target
                                 && (entity instanceof Player || entity instanceof Mob)

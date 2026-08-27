@@ -11,11 +11,17 @@ import net.fabricmc.loader.api.FabricLoader;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class ObserverCamConfig {
+    private static final Logger LOGGER = LoggerFactory.getLogger("ObserverCam/Config");
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static ObserverCamConfig instance = new ObserverCamConfig();
 
@@ -79,22 +85,39 @@ public final class ObserverCamConfig {
                 if (loaded != null) {
                     instance = loaded;
                 }
-            } catch (IOException | RuntimeException ignored) {
+            } catch (IOException | RuntimeException exception) {
+                LOGGER.warn("Could not load {}; using default Observer Cam settings", path, exception);
                 instance = new ObserverCamConfig();
             }
         }
         instance.clamp();
     }
 
-    public void save() {
+    public synchronized void save() {
         clamp();
         Path path = configPath();
+        Path temporary = path.resolveSibling(path.getFileName() + ".tmp");
         try {
-            Files.createDirectories(path.getParent());
-            try (Writer writer = Files.newBufferedWriter(path)) {
+            Path parent = path.getParent();
+            if (parent != null) {
+                Files.createDirectories(parent);
+            }
+            try (Writer writer = Files.newBufferedWriter(temporary)) {
                 GSON.toJson(this, writer);
             }
-        } catch (IOException ignored) {
+            try {
+                Files.move(temporary, path, StandardCopyOption.ATOMIC_MOVE,
+                        StandardCopyOption.REPLACE_EXISTING);
+            } catch (AtomicMoveNotSupportedException ignored) {
+                Files.move(temporary, path, StandardCopyOption.REPLACE_EXISTING);
+            }
+        } catch (IOException exception) {
+            try {
+                Files.deleteIfExists(temporary);
+            } catch (IOException cleanupFailure) {
+                exception.addSuppressed(cleanupFailure);
+            }
+            LOGGER.warn("Could not save Observer Cam settings to {}", path, exception);
         }
     }
 
@@ -178,29 +201,31 @@ public final class ObserverCamConfig {
     }
 
     private void clamp() {
-        outdoorDistance = clamp(outdoorDistance, 4.0, 20.0);
-        indoorDistance = clamp(indoorDistance, 2.5, 10.0);
-        minimumDistance = clamp(minimumDistance, 2.0, 10.0);
-        maximumDistance = clamp(maximumDistance, minimumDistance, 30.0);
-        cameraHeight = clamp(cameraHeight, 0.0, 8.0);
-        cameraFov = clamp(cameraFov, 35.0, 110.0);
-        maximumSpeed = clamp(maximumSpeed, 0.1, 2.0);
-        acceleration = clamp(acceleration, 0.01, 0.5);
-        rotationSpeed = clamp(rotationSpeed, 1.0, 30.0);
-        positionSmoothing = clamp(positionSmoothing, 0.05, 0.8);
-        rotationSmoothing = clamp(rotationSmoothing, 0.05, 0.8);
-        catchUpDistance = clamp(catchUpDistance, 6.0, 40.0);
-        emergencyTeleportDistance = clamp(emergencyTeleportDistance, catchUpDistance + 2.0, 96.0);
-        backgroundImportance = clamp(backgroundImportance, 0.0, 1.5);
-        playerVisibilityImportance = clamp(playerVisibilityImportance, 0.5, 2.0);
-        shotStability = clamp(shotStability, 0.0, 1.0);
-        reframeThreshold = clamp(reframeThreshold, 20.0, 90.0);
-        preferredPlayerScreenSize = clamp(preferredPlayerScreenSize, 0.15, 0.65);
-        movementPredictionTicks = clamp(movementPredictionTicks, 0.0, 12.0);
-        recordingStorageLimitGb = clamp(recordingStorageLimitGb, 0.5, 100.0);
+        outdoorDistance = clamp(finiteOr(outdoorDistance, 8.0), 4.0, 20.0);
+        indoorDistance = clamp(finiteOr(indoorDistance, 4.0), 2.5, 10.0);
+        minimumDistance = clamp(finiteOr(minimumDistance, 3.0), 2.0, 10.0);
+        maximumDistance = clamp(finiteOr(maximumDistance, 14.0), minimumDistance, 30.0);
+        cameraHeight = clamp(finiteOr(cameraHeight, 2.0), 0.0, 8.0);
+        cameraFov = clamp(finiteOr(cameraFov, 70.0), 35.0, 110.0);
+        maximumSpeed = clamp(finiteOr(maximumSpeed, 0.65), 0.1, 2.0);
+        acceleration = clamp(finiteOr(acceleration, 0.10), 0.01, 0.5);
+        rotationSpeed = clamp(finiteOr(rotationSpeed, 7.0), 1.0, 30.0);
+        positionSmoothing = clamp(finiteOr(positionSmoothing, 0.22), 0.05, 0.8);
+        rotationSmoothing = clamp(finiteOr(rotationSmoothing, 0.28), 0.05, 0.8);
+        catchUpDistance = clamp(finiteOr(catchUpDistance, 14.0), 6.0, 40.0);
+        emergencyTeleportDistance = clamp(finiteOr(emergencyTeleportDistance, 28.0),
+                catchUpDistance + 2.0, 96.0);
+        backgroundImportance = clamp(finiteOr(backgroundImportance, 0.75), 0.0, 1.5);
+        playerVisibilityImportance = clamp(finiteOr(playerVisibilityImportance, 1.0), 0.5, 2.0);
+        shotStability = clamp(finiteOr(shotStability, 0.75), 0.0, 1.0);
+        reframeThreshold = clamp(finiteOr(reframeThreshold, 62.0), 20.0, 90.0);
+        preferredPlayerScreenSize = clamp(finiteOr(preferredPlayerScreenSize, 0.34), 0.15, 0.65);
+        movementPredictionTicks = clamp(finiteOr(movementPredictionTicks, 5.0), 0.0, 12.0);
+        recordingStorageLimitGb = clamp(finiteOr(recordingStorageLimitGb, 3.0), 0.5, 100.0);
         recordingFrameRate = Math.max(15, Math.min(60, recordingFrameRate));
-        instantReplayDurationMinutes = clamp(instantReplayDurationMinutes, 0.5, 30.0);
-        instantReplayStorageLimitGb = clamp(instantReplayStorageLimitGb, 0.25, recordingStorageLimitGb);
+        instantReplayDurationMinutes = clamp(finiteOr(instantReplayDurationMinutes, 2.0), 0.5, 30.0);
+        instantReplayStorageLimitGb = clamp(finiteOr(instantReplayStorageLimitGb, 1.0),
+                0.25, recordingStorageLimitGb);
         if (recordingOutputDirectory == null) {
             recordingOutputDirectory = "";
         }

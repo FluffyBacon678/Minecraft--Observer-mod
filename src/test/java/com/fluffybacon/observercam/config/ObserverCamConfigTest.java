@@ -72,6 +72,26 @@ class ObserverCamConfigTest {
     }
 
     @Test
+    void localConfigurationReplacesNonFiniteNumbersWithDefaults() {
+        ObserverCamConfig config = new ObserverCamConfig();
+        config.outdoorDistance = Double.NaN;
+        config.cameraFov = Double.POSITIVE_INFINITY;
+        config.maximumSpeed = Double.NEGATIVE_INFINITY;
+        config.recordingStorageLimitGb = Double.NaN;
+        config.instantReplayDurationMinutes = Double.POSITIVE_INFINITY;
+        config.instantReplayStorageLimitGb = Double.NaN;
+
+        config.cameraSettings();
+
+        assertEquals(8.0, config.outdoorDistance);
+        assertEquals(70.0, config.cameraFov);
+        assertEquals(0.65, config.maximumSpeed);
+        assertEquals(3.0, config.recordingStorageLimitGb);
+        assertEquals(2.0, config.instantReplayDurationMinutes);
+        assertEquals(1.0, config.instantReplayStorageLimitGb);
+    }
+
+    @Test
     void recordingChoicesCyclePredictably() {
         assertEquals(RecordingVideoFormat.MKV, RecordingVideoFormat.MP4.next());
         assertEquals(RecordingVideoFormat.WEBM, RecordingVideoFormat.MKV.next());

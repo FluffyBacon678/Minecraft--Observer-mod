@@ -146,28 +146,31 @@ public final class ObserverPictureInPicture {
     public static void reset() {
         GENERATION.incrementAndGet();
         CAPTURE_IN_FLIGHT.set(false);
-        nextCaptureNanos = 0L;
         Minecraft client = Minecraft.getInstance();
+        if (client != null && !RenderSystem.isOnRenderThread()) {
+            client.execute(() -> retireTexture(client));
+            return;
+        }
+        retireTexture(client);
+    }
+
+    private static void retireTexture(Minecraft client) {
+        nextCaptureNanos = 0L;
+        renderingFeed = false;
         DynamicTexture retiredTexture = texture;
         texture = null;
         textureWidth = 0;
         textureHeight = 0;
         if (retiredTexture != null && client != null) {
-            Runnable release = () -> {
-                if (client.getTextureManager().getTexture(TEXTURE_ID) == retiredTexture) {
-                    client.getTextureManager().release(TEXTURE_ID);
-                }
-            };
-            if (RenderSystem.isOnRenderThread()) {
-                release.run();
-            } else {
-                client.execute(release);
+            if (client.getTextureManager().getTexture(TEXTURE_ID) == retiredTexture) {
+                client.getTextureManager().release(TEXTURE_ID);
             }
         }
     }
 
     private static void acceptFrame(Minecraft client, long generation, NativeImage image) {
         NativeImage scaled = null;
+        boolean uploadScheduled = false;
         try (image) {
             if (image == null || generation != GENERATION.get()) {
                 return;
@@ -179,14 +182,18 @@ public final class ObserverPictureInPicture {
             scaled = new NativeImage(width, height, false);
             image.resizeSubRectTo(0, 0, image.getWidth(), image.getHeight(), scaled);
             NativeImage completed = scaled;
-            scaled = null;
             client.execute(() -> uploadFrame(client, generation, completed));
+            uploadScheduled = true;
+            scaled = null;
         } catch (Throwable throwable) {
+            LOGGER.error("Could not prepare the Observer picture-in-picture frame", throwable);
+        } finally {
             if (scaled != null) {
                 scaled.close();
             }
-            CAPTURE_IN_FLIGHT.set(false);
-            LOGGER.error("Could not prepare the Observer picture-in-picture frame", throwable);
+            if (!uploadScheduled) {
+                CAPTURE_IN_FLIGHT.set(false);
+            }
         }
     }
 

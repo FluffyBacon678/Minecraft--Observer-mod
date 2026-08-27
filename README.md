@@ -4,16 +4,27 @@
 
 Observer Cam is a Fabric mod that adds an autonomous, floating Observer-block cameraman. The visible Observer is the camera: its observing face supplies the exact position, yaw, and pitch used by Observer POV.
 
+The current build is a **public-beta candidate**. Core camera movement, Observer POV, recording, instant replay, and PiP are implemented; the remaining work is the final multi-scenario gameplay acceptance pass described in [Release readiness](docs/RELEASE.md).
+
 ## Requirements
 
 - Minecraft Java Edition **1.21.11**
-- Fabric Loader **0.18.2 or newer**
-- Fabric API
+- Fabric Loader **0.18.4 or newer**
+- Fabric API **0.141.2+1.21.11**
 - Java **21**
 - Mod Menu 17.x (optional, for the settings button)
 - [FFmpeg](https://ffmpeg.org/download.html) (required only for video recording; Observer Cam detects the standard Winget package or you can select `ffmpeg.exe` in Recording settings)
 
 The movement authority lives on the server, so multiplayer servers must install Observer Cam and Fabric API. Clients need the mod to render the entity and use Observer POV.
+
+## Installation
+
+1. Install Fabric Loader 0.18.4 for Minecraft 1.21.11.
+2. Put Fabric API 0.141.2+1.21.11 and the Observer Cam jar in the instance's `mods` folder.
+3. For multiplayer, install the same two jars on the server. Mod Menu is client-only and optional.
+4. Launch the game, open **Mods → Observer Cam → Configure**, and switch **Cameraman enabled** on.
+
+FFmpeg is not needed for the cameraman, Observer POV, or PiP. Install or select it only when you want to record video or use instant replay.
 
 ## Commands and controls
 
@@ -66,6 +77,15 @@ The debug HUD reports the current director state, distance, target, visibility, 
 - orange — weak visibility;
 - cyan — selected camera-to-focus ray.
 
+## Known limitations
+
+- This beta is intentionally pinned to Minecraft 1.21.11 and the tested Fabric API build.
+- Normal recording and instant replay capture only while full Observer POV is active. PiP is a monitoring view, not a background recorder.
+- Video export requires a separate FFmpeg installation. Observer Cam does not bundle or download it.
+- Automatic game-audio source selection is Windows-only and uses an already available loopback source. No audio driver is installed, and video-only recording remains the default.
+- PiP performs a second world render at 10 FPS, so demanding shader packs can make it expensive.
+- ReplayMod and Flashback camera-track integration is not implemented or advertised as compatible yet.
+
 ## Build and run
 
 ```powershell
@@ -73,8 +93,8 @@ The debug HUD reports the current director state, distance, target, visibility, 
 .\gradlew.bat runClient
 ```
 
-The distributable jar is written to `build/libs/observercam-0.1.0.jar`.
+The distributable jar is written to `build/libs/observercam-0.1.0-beta.1+mc1.21.11.jar`.
 
-The supplied project artwork is packaged as the Mod Menu icon at `src/client/resources/assets/observercam/icon.png`; the same original-resolution PNG can be uploaded as the Modrinth project thumbnail.
+The supplied artwork is packaged as an optimized in-game/Mod Menu icon at `src/client/resources/assets/observercam/icon.png`. Before reusing any artwork on a public project page, confirm its distribution rights, provenance, and the host's current media policy.
 
-See [Testing](docs/TESTING.md) for the recommended hands-on pass, [Architecture](docs/ARCHITECTURE.md) for implementation details, [Recording plan](docs/RECORDING_PLAN.md) for the video roadmap, and [Research](docs/RESEARCH.md) for source-review notes.
+See [Release readiness](docs/RELEASE.md) for the remaining publication gate, [Testing](docs/TESTING.md) for the hands-on pass, [Changelog](CHANGELOG.md) for release notes, [Architecture](docs/ARCHITECTURE.md) for implementation details, [Recording plan](docs/RECORDING_PLAN.md) for the video roadmap, and [Research](docs/RESEARCH.md) for source-review notes.

@@ -4,7 +4,7 @@ The next useful step is a real gameplay pass with the freshly built jar. Begin w
 
 ## Setup
 
-1. Install Minecraft Java 1.21.11, Fabric Loader 0.18.2 or newer, Fabric API, Observer Cam, and optionally Mod Menu 17.x. Install FFmpeg or select `ffmpeg.exe` in Recording settings before the recording checks.
+1. Install Minecraft Java 1.21.11, Fabric Loader 0.18.4 or newer, Fabric API 0.141.2+1.21.11, Observer Cam, and optionally Mod Menu 17.x. Install FFmpeg or select `ffmpeg.exe` in Recording settings before the recording checks.
 2. Use a disposable world or back up the test world.
 3. Run `/gamemode creative` before movement tests so camera evaluation is not interrupted by player death.
 4. In **Mods → Observer Cam → Configure**, choose **Reset Defaults** and confirm.
@@ -107,6 +107,6 @@ Enable **Debug HUD**, **Show candidate positions**, and **Show selected position
 2. Tune clipping and line-of-sight recovery using hallway, forest, and cave results.
 3. Tune shot stability and background composition using outdoor movement clips.
 4. Repeat the dimension, teleport, and disconnect recovery checks.
-5. After the core cameraman and the 20-second recording pass are reliable, prepare the first Modrinth release entry and upload the packaged artwork as its thumbnail.
+5. Record the results in [Release readiness](RELEASE.md), prepare compliant storefront artwork and screenshots, then publish the first beta only after every required gate passes.
 
 When reporting a problem, include the scenario, commands used, relevant changed settings, expected behavior, actual behavior, and a screenshot or short clip when possible.
