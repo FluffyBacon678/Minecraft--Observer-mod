@@ -32,13 +32,18 @@ public final class CameraDirector {
     private boolean forcedRecoveryPending;
     private Vec3 compositionFocus;
     private Vec3 shotForward;
+    private Vec3 trackedTargetAnchor;
     private final MotionController motionController = new MotionController();
 
     public void tick(ObserverCameraEntity observer, Entity target) {
         ObserverCamConfig config = ObserverCameraManager.cameraConfigFor(observer);
         ticksInShot++;
-        if (desiredPosition == null || forcedRecoveryPending || observer.tickCount % PLAN_INTERVAL_TICKS == 0) {
+        boolean planThisTick = desiredPosition == null || forcedRecoveryPending
+                || observer.tickCount % PLAN_INTERVAL_TICKS == 0;
+        if (planThisTick) {
             chooseShot(observer, target, config);
+        } else {
+            translateHeldShotWithTarget(target);
         }
         if (desiredPosition == null || focus == null) {
             observer.updateDebug(CameraState.EMERGENCY_RECOVERY, 0.0, 0, 1.0, 0);
@@ -85,6 +90,7 @@ public final class CameraDirector {
     }
 
     private void chooseShot(ObserverCameraEntity observer, Entity target, ObserverCamConfig config) {
+        trackedTargetAnchor = targetAnchor(target);
         boolean forceEmergencyRecovery = forcedRecoveryPending
                 || failedPlanAttempts >= FAILED_PLAN_ATTEMPTS_BEFORE_RECOVERY - 1;
         forcedRecoveryPending = false;
@@ -175,6 +181,33 @@ public final class CameraDirector {
                 state = CameraState.RECOVER_LOS;
             }
         }
+    }
+
+    private void translateHeldShotWithTarget(Entity target) {
+        Vec3 currentAnchor = targetAnchor(target);
+        if (trackedTargetAnchor == null) {
+            trackedTargetAnchor = currentAnchor;
+            return;
+        }
+        Vec3 displacement = currentAnchor.subtract(trackedTargetAnchor);
+        trackedTargetAnchor = currentAnchor;
+        Vec3 horizontal = new Vec3(displacement.x, 0.0, displacement.z);
+        if (horizontal.lengthSqr() > 4.0) {
+            forcedRecoveryPending = true;
+            return;
+        }
+        if (horizontal.lengthSqr() < 1.0E-8) {
+            return;
+        }
+        desiredPosition = desiredPosition == null ? null : desiredPosition.add(horizontal);
+        focus = focus == null ? null : focus.add(horizontal);
+        compositionFocus = compositionFocus == null ? null : compositionFocus.add(horizontal);
+    }
+
+    private static Vec3 targetAnchor(Entity target) {
+        return new Vec3(target.getX(),
+                target.getBoundingBox().minY + target.getBoundingBox().getYsize() * 0.72,
+                target.getZ());
     }
 
     private boolean viableCandidate(CameraCandidate candidate) {

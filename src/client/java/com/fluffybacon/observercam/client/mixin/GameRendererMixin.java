@@ -2,6 +2,7 @@ package com.fluffybacon.observercam.client.mixin;
 
 import com.fluffybacon.observercam.config.ObserverCamConfig;
 import com.fluffybacon.observercam.client.recording.ObserverFrameCapture;
+import com.fluffybacon.observercam.client.ObserverPictureInPicture;
 import com.fluffybacon.observercam.entity.ObserverCameraEntity;
 import net.minecraft.client.Camera;
 import net.minecraft.client.DeltaTracker;
@@ -20,6 +21,14 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(GameRenderer.class)
 public abstract class GameRendererMixin {
+    @Inject(method = "render", at = @At(value = "INVOKE",
+            target = "Lnet/minecraft/client/renderer/GameRenderer;renderLevel(Lnet/minecraft/client/DeltaTracker;)V",
+            shift = At.Shift.BEFORE))
+    private void observercam$capturePictureInPicture(DeltaTracker deltaTracker, boolean renderLevel,
+                                                     CallbackInfo callbackInfo) {
+        ObserverPictureInPicture.captureBeforeMainWorld((GameRenderer) (Object) this, deltaTracker, renderLevel);
+    }
+
     @Inject(method = "render", at = @At(value = "INVOKE",
             target = "Lnet/minecraft/client/gui/render/GuiRenderer;render(Lcom/mojang/blaze3d/buffers/GpuBufferSlice;)V",
             shift = At.Shift.BEFORE))

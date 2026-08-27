@@ -53,19 +53,11 @@ public final class MotionController {
         }
         float yawDelta = Mth.wrapDegrees(target.yaw() - observer.getYRot());
         float pitchDelta = Mth.wrapDegrees(target.pitch() - observer.getXRot());
-        double desiredYawVelocity = Mth.clamp(yawDelta * config.rotationSmoothing,
-                -config.rotationSpeed, config.rotationSpeed);
-        double desiredPitchVelocity = Mth.clamp(pitchDelta * config.rotationSmoothing,
-                -config.rotationSpeed, config.rotationSpeed);
         double angularAcceleration = Math.max(0.35, config.rotationSpeed * 0.24);
-        yawVelocity = MotionMath.approach(yawVelocity, desiredYawVelocity, angularAcceleration);
-        pitchVelocity = MotionMath.approach(pitchVelocity, desiredPitchVelocity, angularAcceleration);
-        if (Math.abs(yawDelta) < 0.08 && Math.abs(yawVelocity) < 0.12) {
-            yawVelocity = 0.0;
-        }
-        if (Math.abs(pitchDelta) < 0.08 && Math.abs(pitchVelocity) < 0.12) {
-            pitchVelocity = 0.0;
-        }
+        yawVelocity = MotionMath.nextAngularVelocity(yawVelocity, yawDelta,
+                config.rotationSmoothing, config.rotationSpeed, angularAcceleration);
+        pitchVelocity = MotionMath.nextAngularVelocity(pitchVelocity, pitchDelta,
+                config.rotationSmoothing, config.rotationSpeed, angularAcceleration);
         observer.setYRot(observer.getYRot() + (float) yawVelocity);
         observer.setXRot(observer.getXRot() + (float) pitchVelocity);
     }

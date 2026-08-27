@@ -33,7 +33,9 @@ public final class ObserverCamClient implements ClientModInitializer {
         KeyMapping viewKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
                 "key.observercam.toggle_view", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_O, category));
         KeyMapping recordKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
-                "key.observercam.toggle_recording", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_F8, category));
+                "key.observercam.toggle_recording", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_UNKNOWN, category));
+        KeyMapping pictureInPictureKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
+                "key.observercam.toggle_pip", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_UNKNOWN, category));
         KeyMapping saveReplayKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
                 "key.observercam.save_replay", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_F9, category));
 
@@ -50,12 +52,18 @@ public final class ObserverCamClient implements ClientModInitializer {
             ObserverRecordingManager.get().discardInstantReplay(client);
             POV.disconnect(client);
             ObserverRecordingState.reset();
+            ObserverPictureInPicture.reset();
         });
-        ClientLifecycleEvents.CLIENT_STOPPING.register(client -> ObserverRecordingManager.get().shutdown(client));
+        ClientLifecycleEvents.CLIENT_STOPPING.register(client -> {
+            ObserverRecordingManager.get().shutdown(client);
+            ObserverPictureInPicture.reset();
+        });
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath(ObserverCam.MOD_ID, "debug_hud"),
                 (graphics, tickCounter) -> ObserverDebugHud.render(graphics));
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath(ObserverCam.MOD_ID, "recording_hud"),
                 (graphics, tickCounter) -> ObserverRecordingHud.render(graphics));
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath(ObserverCam.MOD_ID, "picture_in_picture"),
+                (graphics, tickCounter) -> ObserverPictureInPicture.render(graphics));
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             while (viewKey.consumeClick()) {
                 POV.toggle(client);
@@ -63,6 +71,9 @@ public final class ObserverCamClient implements ClientModInitializer {
             POV.tick(client);
             while (recordKey.consumeClick()) {
                 ObserverRecordingManager.get().toggle(client);
+            }
+            while (pictureInPictureKey.consumeClick()) {
+                ObserverPictureInPicture.toggle();
             }
             while (saveReplayKey.consumeClick()) {
                 ObserverRecordingManager.get().saveInstantReplay(client);

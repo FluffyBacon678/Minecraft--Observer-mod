@@ -43,14 +43,7 @@ public final class ObserverPovController {
     }
 
     private boolean tryEnable(Minecraft client) {
-        ObserverCameraEntity observer = client.level
-                .getEntities(ObserverCam.OBSERVER_CAMERA, client.player.getBoundingBox().inflate(160.0), ObserverCameraEntity::isAlive)
-                .stream()
-                .filter(entity -> entity.isOwnedBy(client.player.getUUID())
-                        || entity.getOwnerUuid() == null && (entity.getTargetUuid() == null
-                        || entity.getTargetUuid().equals(client.player.getUUID())))
-                .min(Comparator.comparingDouble(entity -> entity.distanceToSqr(client.player)))
-                .orElse(null);
+        ObserverCameraEntity observer = findOwnedObserver(client);
         if (observer == null) {
             return false;
         }
@@ -63,6 +56,20 @@ public final class ObserverPovController {
         client.levelRenderer.needsUpdate();
         client.player.displayClientMessage(Component.translatable("observercam.message.pov.enabled"), true);
         return true;
+    }
+
+    public static ObserverCameraEntity findOwnedObserver(Minecraft client) {
+        if (client == null || client.level == null || client.player == null) {
+            return null;
+        }
+        return client.level
+                .getEntities(ObserverCam.OBSERVER_CAMERA, client.player.getBoundingBox().inflate(160.0), ObserverCameraEntity::isAlive)
+                .stream()
+                .filter(entity -> entity.isOwnedBy(client.player.getUUID())
+                        || entity.getOwnerUuid() == null && (entity.getTargetUuid() == null
+                        || entity.getTargetUuid().equals(client.player.getUUID())))
+                .min(Comparator.comparingDouble(entity -> entity.distanceToSqr(client.player)))
+                .orElse(null);
     }
 
     public void tick(Minecraft client) {

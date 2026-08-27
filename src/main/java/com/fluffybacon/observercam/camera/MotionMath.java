@@ -41,9 +41,45 @@ public final class MotionMath {
         return current + Math.max(-maximumChange, Math.min(maximumChange, target - current));
     }
 
+    /**
+     * Produces a smooth angular step which reacts quickly when the subject crosses
+     * the camera's current direction. Large errors gain bounded catch-up speed,
+     * while the final step is shortened so it cannot overshoot and kink back.
+     */
+    public static double nextAngularVelocity(double currentVelocity, double angularError,
+                                             double response, double baseMaximumSpeed,
+                                             double baseAcceleration) {
+        double absoluteError = Math.abs(angularError);
+        if (absoluteError < 0.08 && Math.abs(currentVelocity) < 0.12) {
+            return 0.0;
+        }
+
+        double catchUp = smoothStep(25.0, 100.0, absoluteError);
+        double maximumSpeed = baseMaximumSpeed * (1.0 + catchUp * 0.55);
+        double desiredVelocity = clamp(angularError * response, -maximumSpeed, maximumSpeed);
+        boolean movingAway = currentVelocity * angularError < 0.0;
+        double maximumChange = movingAway
+                ? Math.max(baseAcceleration * 2.5, baseMaximumSpeed * 1.15)
+                : baseAcceleration;
+        double next = approach(currentVelocity, desiredVelocity, maximumChange);
+        if (Math.abs(next) > absoluteError) {
+            next = angularError;
+        }
+        return next;
+    }
+
     private static Vec3 clamp(Vec3 vector, double maximum) {
         double length = vector.length();
         return length > maximum && length > 0.0 ? vector.scale(maximum / length) : vector;
+    }
+
+    private static double clamp(double value, double minimum, double maximum) {
+        return Math.max(minimum, Math.min(maximum, value));
+    }
+
+    private static double smoothStep(double edge0, double edge1, double value) {
+        double amount = clamp((value - edge0) / (edge1 - edge0), 0.0, 1.0);
+        return amount * amount * (3.0 - 2.0 * amount);
     }
 
     public record MotionStep(Vec3 velocity, Vec3 acceleration) {

@@ -26,7 +26,7 @@ public final class ObserverCamConfigScreen extends Screen {
     private final Screen parent;
     private Button povButton;
     private Button recordingButton;
-    private Button replaySaveButton;
+    private Button pictureInPictureButton;
 
     public ObserverCamConfigScreen(Screen parent) {
         super(Component.translatable("observercam.config.title"));
@@ -60,9 +60,11 @@ public final class ObserverCamConfigScreen extends Screen {
                 .tooltip(Tooltip.create(Component.translatable("observercam.config.recording.tooltip")))
                 .bounds(x, 70, 148, 20)
                 .build());
-        replaySaveButton = addRenderableWidget(Button.builder(replaySaveText(), button ->
-                        ObserverRecordingManager.get().saveInstantReplay(minecraft))
-                .tooltip(Tooltip.create(Component.translatable("observercam.config.replay.save.tooltip")))
+        pictureInPictureButton = addRenderableWidget(Button.builder(pictureInPictureText(), button -> {
+                    ObserverPictureInPicture.toggle();
+                    button.setMessage(pictureInPictureText());
+                })
+                .tooltip(Tooltip.create(Component.translatable("observercam.config.pip.tooltip")))
                 .bounds(x + 152, 70, 148, 20)
                 .build());
 
@@ -109,10 +111,9 @@ public final class ObserverCamConfigScreen extends Screen {
         };
     }
 
-    private static Component replaySaveText() {
-        return ObserverRecordingManager.get().replayState() == ReplayState.SAVING
-                ? Component.translatable("observercam.config.replay.saving")
-                : Component.translatable("observercam.config.replay.save");
+    private static Component pictureInPictureText() {
+        return Component.translatable(ObserverPictureInPicture.isEnabled()
+                ? "observercam.config.pip.hide" : "observercam.config.pip.show");
     }
 
     private void confirmReset() {
@@ -120,6 +121,7 @@ public final class ObserverCamConfigScreen extends Screen {
             if (confirmed) {
                 ObserverCamConfig.get().reset();
                 ObserverCamClient.setCameramanEnabled(false);
+                ObserverPictureInPicture.reset();
                 minecraft.setScreen(new ObserverCamConfigScreen(parent));
             } else {
                 minecraft.setScreen(this);
@@ -150,9 +152,8 @@ public final class ObserverCamConfigScreen extends Screen {
                     && (ObserverRecordingManager.get().replayState() == ReplayState.IDLE
                     || ObserverRecordingManager.get().replayState() == ReplayState.BUFFERING);
         }
-        if (replaySaveButton != null) {
-            replaySaveButton.setMessage(replaySaveText());
-            replaySaveButton.active = ObserverRecordingManager.get().isReplayBuffering();
+        if (pictureInPictureButton != null) {
+            pictureInPictureButton.setMessage(pictureInPictureText());
         }
         graphics.drawCenteredString(font, title, width / 2, 20, 0xFFFFFFFF);
         graphics.drawCenteredString(font, Component.translatable("observercam.config.live_hint"), width / 2, 31, 0xFFAAAAAA);
@@ -260,7 +261,9 @@ public final class ObserverCamConfigScreen extends Screen {
                                 () -> c.recordingQuality = c.recordingQuality.next(), false),
                         number("recording_frame_rate", "frames_per_second", 15, 60, 0,
                                 () -> c.recordingFrameRate, v -> c.recordingFrameRate = (int) Math.round(v)),
-                        bool("recording_include_hud", () -> c.recordingIncludeHud, v -> c.recordingIncludeHud = v)
+                        bool("recording_include_hud", () -> c.recordingIncludeHud, v -> c.recordingIncludeHud = v),
+                        bool("picture_in_picture_enabled", () -> c.pictureInPictureEnabled,
+                                ObserverPictureInPicture::setEnabled)
                 );
                 case REPLAY -> List.of(
                         action("save_instant_replay", () -> ObserverRecordingManager.get()

@@ -52,6 +52,7 @@ public final class ObserverCamConfig {
     public RecordingQuality recordingQuality = RecordingQuality.BALANCED;
     public int recordingFrameRate = 30;
     public boolean recordingIncludeHud = false;
+    public boolean pictureInPictureEnabled = false;
     public String recordingFfmpegPath = "ffmpeg";
     public boolean recordingAudioEnabled = false;
     public String recordingAudioDevice = "";

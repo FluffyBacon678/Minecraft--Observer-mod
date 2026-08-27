@@ -25,7 +25,7 @@ Primary references:
 
 ## Phase 1 — narrow video-only MVP (implemented)
 
-1. **Start recording** / **Stop recording** is available on the Mod Menu landing page and through the rebindable `F8` key.
+1. **Start recording** / **Stop recording** is available on the Mod Menu landing page and through a rebindable key which is deliberately unassigned by default.
 2. Recording is allowed only while Observer POV is active. Losing the Observer, leaving the world, exiting POV, resizing the framebuffer, or shutting down finalizes the session safely.
 3. The final Observer framebuffer is captured at the current window resolution. The default is 30 FPS with Minecraft's HUD/chat excluded; **Include HUD** enables the post-GUI capture point.
 4. Minecraft's asynchronous screenshot readback performs the GPU transfer. This reuses the game's maintained render path and is less fragile around Sodium/Iris than owning a second OpenGL readback implementation.
@@ -44,7 +44,7 @@ Phase 1 deliberately excludes replay timelines, camera editing, 4K supersampling
 - Exactly one selected retention rule applies: elapsed time or combined buffer size. The global 3 GB recording cap and free-disk reserve always remain absolute ceilings.
 - Eviction selects only the oldest complete segments. The active segment, completed exports, unrelated files, unmarked directories, and another location's data are never deletion targets.
 - `F9` and **Save recent footage** close the active segment, concatenate the retained sequence without re-encoding, save it in the selected MP4/MKV/WebM format, remove the successful private buffer, and resume automatically.
-- A normal `F8` recording temporarily replaces the replay encoder rather than running two encoders at once. Replay buffering resumes after the normal video finalizes.
+- A normal recording temporarily replaces the replay encoder rather than running two encoders at once. Replay buffering resumes after the normal video finalizes.
 - Disconnect, POV exit, disabling the setting, and shutdown discard unsaved private buffer data. A failed export retains its marked session and diagnostics until the next clean buffer startup.
 
 ## Phase 2B — output quality (implemented)

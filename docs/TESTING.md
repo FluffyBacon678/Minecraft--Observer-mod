@@ -14,7 +14,7 @@ The next useful step is a real gameplay pass with the freshly built jar. Begin w
 ## Configuration checks
 
 - Mod Menu shows the supplied Observer Cam artwork.
-- **Configure** shows the direct cameraman, POV, and recording actions plus the eight category pages in a compact two-column layout.
+- **Configure** shows direct cameraman, POV, recording, and Observer PiP actions plus the eight category pages in a compact two-column layout.
 - Every slider and toggle has a helpful hover description.
 - Values show useful units, including blocks, degrees, ticks, and percent.
 - Changed values survive leaving and reopening the screen.
@@ -28,10 +28,20 @@ The next useful step is a real gameplay pass with the freshly built jar. Begin w
 - **Record audio** is Off after Reset Defaults. Clicking **Audio source** lists only Windows game-audio loopback inputs; if none exists, it explains that recording stays video-only and never offers a microphone as a substitute.
 - **Open video folder** creates and opens the resolved output directory.
 - **Instant Replay** is Off after Reset Defaults, offers Time or Size retention, and exposes **Save recent footage** without hiding the `F9` binding.
+- **Observer picture-in-picture** is Off after Reset Defaults. Its recording and PiP controls are unbound by default and therefore cannot replace an existing key; both remain usable from Mod Menu.
+
+## Picture-in-picture checks
+
+1. Use the normal player camera and click **Show Observer PiP**. Confirm a live 16:9 Observer feed appears at the upper-left while movement, mining, and placement still control the player.
+2. Sprint, jump, and turn quickly. The feed should update smoothly enough to monitor framing without changing the main camera.
+3. Enter full Observer POV and confirm the duplicate PiP hides; exit POV and confirm it returns.
+4. Hide Minecraft's HUD and confirm the PiP hides with it. Show the HUD and confirm it returns.
+5. Disable PiP and confirm its texture disappears immediately. Rejoin the world and confirm the saved preference is respected.
+6. Test once with shaders. PiP intentionally renders a second world view at 10 FPS; leave it disabled if the shader cost is too high.
 
 ## Recording checks
 
-1. Enter Observer POV, press `F8`, move normally for 20 seconds, and press `F8` again. Wait for the saved message before closing Minecraft.
+1. Bind **Start/stop Observer recording** under Observer Cam controls or use the Mod Menu button. Enter Observer POV, record normal movement for 20 seconds, then stop. Wait for the saved message before closing Minecraft.
 2. Confirm the Observer eye glows red while recording, the compact REC indicator advances, and the resulting video has the expected duration, view, and smooth playback.
 3. Repeat with **Include HUD** enabled and confirm HUD/chat inclusion changes without changing the Observer view.
 4. Repeat once with MKV and once with WebM; confirm every clean stop produces the selected extension and no `.partial` file or FFmpeg log remains.
@@ -51,7 +61,7 @@ If a recording fails, keep the `.partial` file and matching `.ffmpeg.log`; those
 3. Film for at least 45 seconds, press `F9`, wait for **Instant replay saved**, and confirm the output contains approximately the latest 30 seconds rather than the full 45 seconds.
 4. Keep playing after the save and confirm buffering resumes automatically. Save again and verify the second file contains only footage recorded after buffering resumed.
 5. Select the Size limit, choose the minimum cap, and confirm old segments disappear while the indicator remains active and the global recording folder cap is never crossed.
-6. Start a normal `F8` recording while replay is buffering. The replay indicator should pause, the normal REC indicator should take over, and replay should resume after the normal video is saved.
+6. Start a normal recording from Mod Menu or your assigned key while replay is buffering. The replay indicator should pause, the normal REC indicator should take over, and replay should resume after the normal video is saved.
 7. Exit POV without saving and confirm the private buffer disappears. Completed replay videos must remain untouched.
 8. Repeat the save once for MP4, MKV, and WebM. Check duration, seeking, first/last frames, and that no unexpected re-encoding delay occurs.
 

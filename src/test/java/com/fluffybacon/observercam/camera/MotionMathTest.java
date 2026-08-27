@@ -50,4 +50,29 @@ class MotionMathTest {
         assertEquals(-1.5, MotionMath.approach(0.0, -7.0, 1.5), 1.0E-9);
         assertEquals(1.0, MotionMath.approach(0.5, 1.0, 1.5), 1.0E-9);
     }
+
+    @Test
+    void angularTrackingBrakesImmediatelyWhenTheSubjectCrossesSides() {
+        double next = MotionMath.nextAngularVelocity(7.0, -90.0, 0.28, 7.0, 1.68);
+        assertTrue(next < 0.0, "a stale positive turn must not continue away from the subject");
+        assertTrue(Math.abs(next) <= 7.0 * 1.55 + 1.0E-9);
+    }
+
+    @Test
+    void angularTrackingCannotOvershootTheRemainingError() {
+        double positive = MotionMath.nextAngularVelocity(2.0, 0.35, 0.28, 7.0, 1.68);
+        double negative = MotionMath.nextAngularVelocity(-1.0, -0.2, 0.28, 7.0, 1.68);
+        assertTrue(positive >= 0.0 && positive <= 0.35);
+        assertTrue(negative <= 0.0 && negative >= -0.2);
+    }
+
+    @Test
+    void largeAngularErrorsReceiveBoundedCatchUpSpeed() {
+        double next = 0.0;
+        for (int tick = 0; tick < 10; tick++) {
+            next = MotionMath.nextAngularVelocity(next, 120.0, 0.28, 7.0, 1.68);
+        }
+        assertTrue(next > 7.0);
+        assertTrue(next <= 7.0 * 1.55 + 1.0E-9);
+    }
 }
