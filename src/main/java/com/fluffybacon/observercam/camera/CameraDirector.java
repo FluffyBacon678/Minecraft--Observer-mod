@@ -32,6 +32,7 @@ public final class CameraDirector {
     private boolean forcedRecoveryPending;
     private Vec3 compositionFocus;
     private Vec3 shotForward;
+    private final MotionController motionController = new MotionController();
 
     public void tick(ObserverCameraEntity observer, Entity target) {
         ObserverCamConfig config = ObserverCameraManager.cameraConfigFor(observer);
@@ -46,7 +47,7 @@ public final class CameraDirector {
 
         if (emergencyTeleportPending) {
             observer.snapTo(desiredPosition);
-            observer.setDeltaMovement(Vec3.ZERO);
+            motionController.reset(observer);
             CameraTransform.Rotation rotation = CameraTransform.lookAt(desiredPosition.add(0.0, 0.5, 0.0), focus);
             observer.setYRot(rotation.yaw());
             observer.setXRot(rotation.pitch());
@@ -62,7 +63,7 @@ public final class CameraDirector {
         }
         Vec3 beforeMove = observer.position();
         double distanceBeforeMove = beforeMove.distanceTo(desiredPosition);
-        boolean teleported = MotionController.tick(observer, desiredPosition, focus, config);
+        boolean teleported = motionController.tick(observer, desiredPosition, focus, config);
         if (teleported) {
             state = CameraState.EMERGENCY_RECOVERY;
         }

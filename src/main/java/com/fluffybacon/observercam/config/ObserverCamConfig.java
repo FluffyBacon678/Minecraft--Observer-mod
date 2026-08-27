@@ -1,6 +1,8 @@
 package com.fluffybacon.observercam.config;
 
 import com.fluffybacon.observercam.recording.InstantReplayLimitMode;
+import com.fluffybacon.observercam.recording.RecordingQuality;
+import com.fluffybacon.observercam.recording.RecordingResolution;
 import com.fluffybacon.observercam.recording.RecordingVideoFormat;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -46,6 +48,13 @@ public final class ObserverCamConfig {
     public double recordingStorageLimitGb = 3.0;
     public String recordingOutputDirectory = "";
     public RecordingVideoFormat recordingVideoFormat = RecordingVideoFormat.MP4;
+    public RecordingResolution recordingResolution = RecordingResolution.CURRENT;
+    public RecordingQuality recordingQuality = RecordingQuality.BALANCED;
+    public int recordingFrameRate = 30;
+    public boolean recordingIncludeHud = false;
+    public String recordingFfmpegPath = "ffmpeg";
+    public boolean recordingAudioEnabled = false;
+    public String recordingAudioDevice = "";
     public boolean instantReplayEnabled = false;
     public InstantReplayLimitMode instantReplayLimitMode = InstantReplayLimitMode.TIME;
     public double instantReplayDurationMinutes = 2.0;
@@ -188,6 +197,7 @@ public final class ObserverCamConfig {
         preferredPlayerScreenSize = clamp(preferredPlayerScreenSize, 0.15, 0.65);
         movementPredictionTicks = clamp(movementPredictionTicks, 0.0, 12.0);
         recordingStorageLimitGb = clamp(recordingStorageLimitGb, 0.5, 100.0);
+        recordingFrameRate = Math.max(15, Math.min(60, recordingFrameRate));
         instantReplayDurationMinutes = clamp(instantReplayDurationMinutes, 0.5, 30.0);
         instantReplayStorageLimitGb = clamp(instantReplayStorageLimitGb, 0.25, recordingStorageLimitGb);
         if (recordingOutputDirectory == null) {
@@ -195,6 +205,20 @@ public final class ObserverCamConfig {
         }
         if (recordingVideoFormat == null) {
             recordingVideoFormat = RecordingVideoFormat.MP4;
+        }
+        if (recordingResolution == null) {
+            recordingResolution = RecordingResolution.CURRENT;
+        }
+        if (recordingQuality == null) {
+            recordingQuality = RecordingQuality.BALANCED;
+        }
+        if (recordingFfmpegPath == null || recordingFfmpegPath.isBlank()) {
+            recordingFfmpegPath = "ffmpeg";
+        }
+        if (recordingAudioDevice == null) {
+            recordingAudioDevice = "";
+        } else {
+            recordingAudioDevice = recordingAudioDevice.trim();
         }
         if (instantReplayLimitMode == null) {
             instantReplayLimitMode = InstantReplayLimitMode.TIME;

@@ -2,6 +2,8 @@ package com.fluffybacon.observercam.client;
 
 import com.fluffybacon.observercam.ObserverCam;
 import com.fluffybacon.observercam.client.render.ObserverCameraRenderer;
+import com.fluffybacon.observercam.client.recording.ObserverRecordingHud;
+import com.fluffybacon.observercam.client.recording.ObserverRecordingManager;
 import com.fluffybacon.observercam.config.ObserverCamConfig;
 import com.fluffybacon.observercam.network.RestoreViewPayload;
 import com.fluffybacon.observercam.network.SetCameramanEnabledPayload;
@@ -10,6 +12,7 @@ import com.fluffybacon.observercam.network.ToggleViewPayload;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
@@ -29,6 +32,10 @@ public final class ObserverCamClient implements ClientModInitializer {
         KeyMapping.Category category = KeyMapping.Category.register(Identifier.fromNamespaceAndPath(ObserverCam.MOD_ID, "controls"));
         KeyMapping viewKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
                 "key.observercam.toggle_view", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_O, category));
+        KeyMapping recordKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
+                "key.observercam.toggle_recording", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_F8, category));
+        KeyMapping saveReplayKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
+                "key.observercam.save_replay", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_F9, category));
 
         ClientPlayNetworking.registerGlobalReceiver(ToggleViewPayload.TYPE, (payload, context) -> POV.toggle(context.client()));
         ClientPlayNetworking.registerGlobalReceiver(RestoreViewPayload.TYPE, (payload, context) -> POV.restore(context.client()));
@@ -38,16 +45,29 @@ public final class ObserverCamClient implements ClientModInitializer {
             ObserverRecordingState.sync();
         });
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
+            ObserverRecordingManager.get().stop(client,
+                    net.minecraft.network.chat.Component.translatable("observercam.recording.stop.disconnect"));
+            ObserverRecordingManager.get().discardInstantReplay(client);
             POV.disconnect(client);
             ObserverRecordingState.reset();
         });
+        ClientLifecycleEvents.CLIENT_STOPPING.register(client -> ObserverRecordingManager.get().shutdown(client));
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath(ObserverCam.MOD_ID, "debug_hud"),
                 (graphics, tickCounter) -> ObserverDebugHud.render(graphics));
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath(ObserverCam.MOD_ID, "recording_hud"),
+                (graphics, tickCounter) -> ObserverRecordingHud.render(graphics));
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             while (viewKey.consumeClick()) {
                 POV.toggle(client);
             }
             POV.tick(client);
+            while (recordKey.consumeClick()) {
+                ObserverRecordingManager.get().toggle(client);
+            }
+            while (saveReplayKey.consumeClick()) {
+                ObserverRecordingManager.get().saveInstantReplay(client);
+            }
+            ObserverRecordingManager.get().tick(client);
             ObserverDebugRenderer.tick(client);
         });
     }

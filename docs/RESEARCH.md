@@ -45,3 +45,26 @@ No source code from the reviewed projects was copied. Observer Cam's implementat
 - Mod Menu: https://modrinth.com/mod/modmenu
 - Versions selected: Minecraft 1.21.11, Java 21, Fabric Loader 0.18.4, Fabric API 0.141.2+1.21.11, Loom 1.14.10, and optional Mod Menu 17.0.0-beta.2.
 - Configuration decision: a small Gson-backed config plus vanilla widgets avoids adding Cloth Config/YACL solely for this MVP.
+
+## Real-time recording and FFmpeg
+
+- Back On Track: https://github.com/Zack694/Back-On-Track
+- License: MIT. The reviewed release targets Fabric 1.21.11, making it the closest current compatibility reference.
+- Useful concepts: capture Minecraft's final framebuffer through the game's asynchronous screenshot readback, hand completed frames to a bounded queue, and stream raw pixels to FFmpeg away from the render thread.
+- ReplayMod rendering documentation: https://www.replaymod.com/docs/
+- FFmpeg raw-video input documentation: https://ffmpeg.org/ffmpeg-all.html#rawvideo
+- FFmpeg segment/stream-segment documentation: https://ffmpeg.org/ffmpeg-formats.html#segment_002c-stream_005fsegment_002c-ssegment
+- Decision: Observer Cam independently implements the same platform pattern with a much narrower scope. Minecraft owns the GPU readback, the queue is deliberately tiny so recording cannot consume unbounded memory, and FFmpeg receives an explicit pixel format, dimensions, and frame rate. The clean-world capture point is before Minecraft draws its GUI; an optional second capture point includes the HUD.
+- Reliability additions: every session has an identity token so late asynchronous frames cannot enter a later recording, the render thread never waits for encoding, brief missed slots are filled without unlimited catch-up, and output is first written to a clearly named partial file before finalization.
+- Instant-replay decision: use the official segment muxer with forced keyframes, fixed two-second segments, reset timestamps, and a concat manifest for stream-copy export. This makes old-footage eviction file-granular and avoids repeatedly rewriting one large recording.
+
+Flashback was also reviewed as a product reference for export controls. Its custom license was not suitable for source reuse, so no Flashback implementation code was copied.
+
+## Audio capture boundary
+
+- OpenAL Soft loopback extension: https://openal-soft.org/openal-extensions/SOFT_loopback.txt
+- FFmpeg device documentation: https://ffmpeg.org/ffmpeg-devices.html#dshow
+- The 1.21.11 Back On Track project independently confirms the practical limitation: Minecraft audio is outside Java Sound, so game-output recording requires a system loopback/monitor device.
+- Decision: do not replace Minecraft's active OpenAL device/context. `ALC_SOFT_loopback` is an application-owned renderer, not a passive tap of the current device; using it would require redirecting the game's sound engine and risks compatibility with audio and voice-chat mods.
+- Decision: optional recording audio comes from an explicitly chosen DirectShow loopback source in the same FFmpeg session as video. MP4/MKV use AAC and WebM uses Opus; replay segments keep the same audio stream for lossless concatenation.
+- The current Windows system exposes microphones but no built-in loopback source. Observer Cam therefore remains video-only here unless Windows' own Stereo Mix becomes available. It does not install or require an additional virtual-audio package and never guesses a microphone as game audio.

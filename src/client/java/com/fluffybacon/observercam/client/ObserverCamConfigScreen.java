@@ -1,6 +1,9 @@
 package com.fluffybacon.observercam.client;
 
 import com.fluffybacon.observercam.config.ObserverCamConfig;
+import com.fluffybacon.observercam.client.recording.ObserverRecordingManager;
+import com.fluffybacon.observercam.client.recording.RecordingState;
+import com.fluffybacon.observercam.client.recording.ReplayState;
 import com.fluffybacon.observercam.recording.InstantReplayLimitMode;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractSliderButton;
@@ -22,6 +25,8 @@ public final class ObserverCamConfigScreen extends Screen {
     private static final int CONTENT_WIDTH = 300;
     private final Screen parent;
     private Button povButton;
+    private Button recordingButton;
+    private Button replaySaveButton;
 
     public ObserverCamConfigScreen(Screen parent) {
         super(Component.translatable("observercam.config.title"));
@@ -50,22 +55,34 @@ public final class ObserverCamConfigScreen extends Screen {
                 .build());
         povButton.active = minecraft != null && minecraft.level != null && minecraft.player != null;
 
+        recordingButton = addRenderableWidget(Button.builder(recordingText(), button ->
+                        ObserverRecordingManager.get().toggle(minecraft))
+                .tooltip(Tooltip.create(Component.translatable("observercam.config.recording.tooltip")))
+                .bounds(x, 70, 148, 20)
+                .build());
+        replaySaveButton = addRenderableWidget(Button.builder(replaySaveText(), button ->
+                        ObserverRecordingManager.get().saveInstantReplay(minecraft))
+                .tooltip(Tooltip.create(Component.translatable("observercam.config.replay.save.tooltip")))
+                .bounds(x + 152, 70, 148, 20)
+                .build());
+
         Category[] categories = Category.values();
         for (int index = 0; index < categories.length; index++) {
             Category category = categories[index];
             int categoryX = x + (index % 2) * 152;
-            int categoryY = 74 + (index / 2) * 24;
+            int categoryY = 98 + (index / 2) * 24;
             addRenderableWidget(Button.builder(category.title(), button -> minecraft.setScreen(new CategoryScreen(this, category)))
                     .tooltip(Tooltip.create(category.description()))
                     .bounds(categoryX, categoryY, 148, 20)
                     .build());
         }
+        int actionY = 106 + ((categories.length + 1) / 2) * 24;
         addRenderableWidget(Button.builder(Component.translatable("observercam.config.reset"), button -> confirmReset())
                 .tooltip(Tooltip.create(Component.translatable("observercam.config.reset.tooltip")))
-                .bounds(x, 154, 148, 20)
+                .bounds(x, actionY, 148, 20)
                 .build());
         addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, button -> onClose())
-                .bounds(x + 152, 154, 148, 20)
+                .bounds(x + 152, actionY, 148, 20)
                 .build());
     }
 
@@ -81,6 +98,21 @@ public final class ObserverCamConfigScreen extends Screen {
         }
         return Component.translatable(ObserverCamClient.isPovRequestPending()
                 ? "observercam.config.pov.cancel" : "observercam.config.pov.enter");
+    }
+
+    private static Component recordingText() {
+        return switch (ObserverRecordingManager.get().state()) {
+            case RECORDING -> Component.translatable("observercam.config.recording.stop");
+            case STARTING -> Component.translatable("observercam.config.recording.starting");
+            case FINALIZING -> Component.translatable("observercam.config.recording.saving");
+            case IDLE -> Component.translatable("observercam.config.recording.start");
+        };
+    }
+
+    private static Component replaySaveText() {
+        return ObserverRecordingManager.get().replayState() == ReplayState.SAVING
+                ? Component.translatable("observercam.config.replay.saving")
+                : Component.translatable("observercam.config.replay.save");
     }
 
     private void confirmReset() {
@@ -110,6 +142,18 @@ public final class ObserverCamConfigScreen extends Screen {
             povButton.setMessage(povText());
             povButton.active = minecraft != null && minecraft.level != null && minecraft.player != null;
         }
+        if (recordingButton != null) {
+            RecordingState state = ObserverRecordingManager.get().state();
+            recordingButton.setMessage(recordingText());
+            recordingButton.active = state == RecordingState.RECORDING
+                    || state == RecordingState.IDLE && ObserverCamClient.isViewingObserver()
+                    && (ObserverRecordingManager.get().replayState() == ReplayState.IDLE
+                    || ObserverRecordingManager.get().replayState() == ReplayState.BUFFERING);
+        }
+        if (replaySaveButton != null) {
+            replaySaveButton.setMessage(replaySaveText());
+            replaySaveButton.active = ObserverRecordingManager.get().isReplayBuffering();
+        }
         graphics.drawCenteredString(font, title, width / 2, 20, 0xFFFFFFFF);
         graphics.drawCenteredString(font, Component.translatable("observercam.config.live_hint"), width / 2, 31, 0xFFAAAAAA);
         super.render(graphics, mouseX, mouseY, delta);
@@ -125,7 +169,9 @@ public final class ObserverCamConfigScreen extends Screen {
         MOVEMENT("movement"),
         CINEMATOGRAPHY("cinematography"),
         BEHAVIOR("behavior"),
-        STORAGE("storage"),
+        RECORDING("recording"),
+        VIDEO("video"),
+        REPLAY("replay"),
         DEBUG("debug");
 
         private final String key;
@@ -188,18 +234,37 @@ public final class ObserverCamConfigScreen extends Screen {
                         bool("follow_automatically", () -> c.followTargetAutomatically, v -> c.followTargetAutomatically = v),
                         bool("allow_front_shots", () -> c.allowFrontFacingShots, v -> c.allowFrontFacingShots = v)
                 );
-                case STORAGE -> List.of(
+                case RECORDING -> List.of(
                         directory("recording_output_directory"),
                         action("open_recording_folder", RecordingFolderActions::open),
-                        choice("recording_video_format",
-                                () -> Component.translatable("observercam.config.format." + c.recordingVideoFormat.id()),
-                                () -> c.recordingVideoFormat = c.recordingVideoFormat.next(), false),
+                        file("recording_ffmpeg", () -> c.recordingFfmpegPath, FFmpegExecutablePicker::choose),
+                        bool("recording_audio_enabled", () -> c.recordingAudioEnabled,
+                                v -> c.recordingAudioEnabled = v),
+                        audioDevice("recording_audio_device"),
                         number("recording_storage_limit", "gigabytes", 0.5, 100, 1,
                                 () -> c.recordingStorageLimitGb,
                                 v -> {
                                     c.recordingStorageLimitGb = v;
                                     c.instantReplayStorageLimitGb = Math.min(c.instantReplayStorageLimitGb, v);
-                                }),
+                                })
+                );
+                case VIDEO -> List.of(
+                        choice("recording_video_format",
+                                () -> Component.translatable("observercam.config.format." + c.recordingVideoFormat.id()),
+                                () -> c.recordingVideoFormat = c.recordingVideoFormat.next(), false),
+                        choice("recording_resolution",
+                                () -> Component.translatable("observercam.config.resolution." + c.recordingResolution.id()),
+                                () -> c.recordingResolution = c.recordingResolution.next(), false),
+                        choice("recording_quality",
+                                () -> Component.translatable("observercam.config.quality." + c.recordingQuality.id()),
+                                () -> c.recordingQuality = c.recordingQuality.next(), false),
+                        number("recording_frame_rate", "frames_per_second", 15, 60, 0,
+                                () -> c.recordingFrameRate, v -> c.recordingFrameRate = (int) Math.round(v)),
+                        bool("recording_include_hud", () -> c.recordingIncludeHud, v -> c.recordingIncludeHud = v)
+                );
+                case REPLAY -> List.of(
+                        action("save_instant_replay", () -> ObserverRecordingManager.get()
+                                .saveInstantReplay(net.minecraft.client.Minecraft.getInstance())),
                         bool("instant_replay_enabled", () -> c.instantReplayEnabled, v -> c.instantReplayEnabled = v),
                         choice("instant_replay_limit_mode",
                                 () -> Component.translatable("observercam.config.replay_limit." + c.instantReplayLimitMode.id()),
@@ -240,15 +305,24 @@ public final class ObserverCamConfigScreen extends Screen {
         return new DirectorySetting(key);
     }
 
+    private static FileSetting file(String key, Supplier<String> getter, java.util.function.Consumer<Runnable> chooser) {
+        return new FileSetting(key, getter, chooser);
+    }
+
     private static ChoiceSetting choice(String key, Supplier<Component> getter, Runnable advance, boolean rebuild) {
         return new ChoiceSetting(key, getter, advance, rebuild);
+    }
+
+    private static AudioDeviceSetting audioDevice(String key) {
+        return new AudioDeviceSetting(key);
     }
 
     private static ActionSetting action(String key, Runnable action) {
         return new ActionSetting(key, action);
     }
 
-    private sealed interface Setting permits NumberSetting, BooleanSetting, DirectorySetting, ChoiceSetting, ActionSetting {
+    private sealed interface Setting permits NumberSetting, BooleanSetting, DirectorySetting, FileSetting,
+            AudioDeviceSetting, ChoiceSetting, ActionSetting {
         String key();
 
         default Component label() {
@@ -268,6 +342,13 @@ public final class ObserverCamConfigScreen extends Screen {
     }
 
     private record DirectorySetting(String key) implements Setting {
+    }
+
+    private record FileSetting(String key, Supplier<String> getter,
+                               java.util.function.Consumer<Runnable> chooser) implements Setting {
+    }
+
+    private record AudioDeviceSetting(String key) implements Setting {
     }
 
     private record ChoiceSetting(String key, Supplier<Component> getter, Runnable advance, boolean rebuild) implements Setting {
@@ -318,6 +399,26 @@ public final class ObserverCamConfigScreen extends Screen {
                             .bounds(x, y, CONTENT_WIDTH, 20)
                             .build();
                     addRenderableWidget(browse);
+                } else if (setting instanceof FileSetting file) {
+                    Button browse = Button.builder(fileText(file), button -> file.chooser.accept(() -> {
+                                button.setMessage(fileText(file));
+                                button.setTooltip(fileTooltip(file));
+                            }))
+                            .tooltip(fileTooltip(file))
+                            .bounds(x, y, CONTENT_WIDTH, 20)
+                            .build();
+                    addRenderableWidget(browse);
+                } else if (setting instanceof AudioDeviceSetting audio) {
+                    Button choose = Button.builder(audioDeviceText(audio), button ->
+                                    FFmpegAudioDevicePicker.choose(() -> {
+                                        button.setMessage(audioDeviceText(audio));
+                                        button.setTooltip(audioDeviceTooltip(audio));
+                                        rebuildWidgets();
+                                    }))
+                            .tooltip(audioDeviceTooltip(audio))
+                            .bounds(x, y, CONTENT_WIDTH, 20)
+                            .build();
+                    addRenderableWidget(choose);
                 } else if (setting instanceof ChoiceSetting choice) {
                     Button choiceButton = Button.builder(choiceText(choice), button -> {
                                 choice.advance.run();
@@ -361,6 +462,40 @@ public final class ObserverCamConfigScreen extends Screen {
             return Tooltip.create(setting.tooltip().copy()
                     .append("\n")
                     .append(ObserverCamConfig.get().recordingOutputPath().toString()));
+        }
+
+        private static Component fileText(FileSetting setting) {
+            String configured = setting.getter.get();
+            String displayName;
+            try {
+                var fileName = java.nio.file.Path.of(configured).getFileName();
+                displayName = fileName == null ? configured : fileName.toString();
+            } catch (java.nio.file.InvalidPathException ignored) {
+                displayName = configured;
+            }
+            return Component.translatable("observercam.config.value", setting.label(),
+                    Component.literal(displayName));
+        }
+
+        private static Tooltip fileTooltip(FileSetting setting) {
+            return Tooltip.create(setting.tooltip().copy().append("\n").append(setting.getter.get()));
+        }
+
+        private static Component audioDeviceText(AudioDeviceSetting setting) {
+            String device = ObserverCamConfig.get().recordingAudioDevice;
+            Component value = device.isBlank()
+                    ? Component.translatable("observercam.config.audio.not_selected")
+                    : Component.literal(device);
+            return Component.translatable("observercam.config.value", setting.label(), value);
+        }
+
+        private static Tooltip audioDeviceTooltip(AudioDeviceSetting setting) {
+            String device = ObserverCamConfig.get().recordingAudioDevice;
+            var tooltip = setting.tooltip().copy();
+            if (!device.isBlank()) {
+                tooltip.append("\n").append(device);
+            }
+            return Tooltip.create(tooltip);
         }
 
         private static Component choiceText(ChoiceSetting setting) {

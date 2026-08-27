@@ -4,7 +4,7 @@ The next useful step is a real gameplay pass with the freshly built jar. Begin w
 
 ## Setup
 
-1. Install Minecraft Java 1.21.11, Fabric Loader 0.18.2 or newer, Fabric API, Observer Cam, and optionally Mod Menu 17.x.
+1. Install Minecraft Java 1.21.11, Fabric Loader 0.18.2 or newer, Fabric API, Observer Cam, and optionally Mod Menu 17.x. Install FFmpeg or select `ffmpeg.exe` in Recording settings before the recording checks.
 2. Use a disposable world or back up the test world.
 3. Run `/gamemode creative` before movement tests so camera evaluation is not interrupted by player death.
 4. In **Mods → Observer Cam → Configure**, choose **Reset Defaults** and confirm.
@@ -14,7 +14,7 @@ The next useful step is a real gameplay pass with the freshly built jar. Begin w
 ## Configuration checks
 
 - Mod Menu shows the supplied Observer Cam artwork.
-- **Configure** shows the direct cameraman and POV actions plus the six category pages in a compact two-column layout.
+- **Configure** shows the direct cameraman, POV, and recording actions plus the eight category pages in a compact two-column layout.
 - Every slider and toggle has a helpful hover description.
 - Values show useful units, including blocks, degrees, ticks, and percent.
 - Changed values survive leaving and reopening the screen.
@@ -22,8 +22,42 @@ The next useful step is a real gameplay pass with the freshly built jar. Begin w
 - Switching **Cameraman enabled** off dismisses the Observer and immediately restores normal POV.
 - Rejoining with the setting enabled creates or resumes exactly one Observer for the player.
 - Repeatedly enabling the cameraman or using summon commands before re-enabling still converges to exactly one assigned Observer.
-- **Recording (Planned)** defaults to a 3 GB storage cap and clearly states that recording is not implemented.
+- **Video Quality** defaults to MP4/H.264, Current Window, Balanced, 30 FPS, and no HUD. **Recording** defaults to a 3 GB combined output-folder cap.
 - Clicking **Video output folder** opens a native folder chooser. Cancelling preserves the old path; selecting a folder updates the button and survives restarting the client.
+- Clicking **FFmpeg executable** can select `ffmpeg.exe`; cancelling preserves the previous choice.
+- **Record audio** is Off after Reset Defaults. Clicking **Audio source** lists only Windows game-audio loopback inputs; if none exists, it explains that recording stays video-only and never offers a microphone as a substitute.
+- **Open video folder** creates and opens the resolved output directory.
+- **Instant Replay** is Off after Reset Defaults, offers Time or Size retention, and exposes **Save recent footage** without hiding the `F9` binding.
+
+## Recording checks
+
+1. Enter Observer POV, press `F8`, move normally for 20 seconds, and press `F8` again. Wait for the saved message before closing Minecraft.
+2. Confirm the Observer eye glows red while recording, the compact REC indicator advances, and the resulting video has the expected duration, view, and smooth playback.
+3. Repeat with **Include HUD** enabled and confirm HUD/chat inclusion changes without changing the Observer view.
+4. Repeat once with MKV and once with WebM; confirm every clean stop produces the selected extension and no `.partial` file or FFmpeg log remains.
+5. Repeat with 720p and 1080p. Confirm the files report exactly 1280×720 and 1920×1080, with no stretched image when the game window is not 16:9.
+6. Compare High, Balanced, and Smaller Files on the same 20-second scene. High should retain the most detail; Smaller Files should normally use less disk.
+7. Temporarily select a missing executable. Starting should show a clear error and create no broken final video.
+8. Resize the window during a short recording. It should stop and finalize rather than feed mixed frame sizes to FFmpeg.
+9. Set a small cap near current folder usage. Recording should refuse to start or stop safely before exceeding it, without deleting existing files.
+10. Exit Observer POV, dismiss the Observer, disconnect, and close Minecraft during separate short sessions. Each should stop/finalize safely.
+
+If a recording fails, keep the `.partial` file and matching `.ffmpeg.log`; those are the most useful diagnostics.
+
+## Instant replay checks
+
+1. Leave **Instant replay buffer** Off, enter Observer POV, and confirm no REPLAY indicator appears and `F9` explains that the feature is disabled.
+2. Enable it with the Time limit at 0.5 minutes. In Observer POV, confirm the red eye and REPLAY indicator appear automatically.
+3. Film for at least 45 seconds, press `F9`, wait for **Instant replay saved**, and confirm the output contains approximately the latest 30 seconds rather than the full 45 seconds.
+4. Keep playing after the save and confirm buffering resumes automatically. Save again and verify the second file contains only footage recorded after buffering resumed.
+5. Select the Size limit, choose the minimum cap, and confirm old segments disappear while the indicator remains active and the global recording folder cap is never crossed.
+6. Start a normal `F8` recording while replay is buffering. The replay indicator should pause, the normal REC indicator should take over, and replay should resume after the normal video is saved.
+7. Exit POV without saving and confirm the private buffer disappears. Completed replay videos must remain untouched.
+8. Repeat the save once for MP4, MKV, and WebM. Check duration, seeking, first/last frames, and that no unexpected re-encoding delay occurs.
+
+If a replay export fails, keep its FFmpeg log and private marked buffer for diagnosis. The next clean game session may remove stale private buffer data, so copy it before retrying if recovery matters.
+
+If Windows already exposes Stereo Mix or another loopback source, select it, enable **Record audio**, and repeat one live recording plus one replay save. Confirm the file has synchronized game sound. On systems without a built-in loopback source, leave audio Off; video and replay should work normally without an extra driver.
 
 ## Core experience checks
 
@@ -63,6 +97,6 @@ Enable **Debug HUD**, **Show candidate positions**, and **Show selected position
 2. Tune clipping and line-of-sight recovery using hallway, forest, and cave results.
 3. Tune shot stability and background composition using outdoor movement clips.
 4. Repeat the dimension, teleport, and disconnect recovery checks.
-5. Only after the core cameraman feels reliable, prepare the first Modrinth release entry and upload the packaged artwork as its thumbnail.
+5. After the core cameraman and the 20-second recording pass are reliable, prepare the first Modrinth release entry and upload the packaged artwork as its thumbnail.
 
 When reporting a problem, include the scenario, commands used, relevant changed settings, expected behavior, actual behavior, and a screenshot or short clip when possible.

@@ -8,8 +8,8 @@ import java.nio.file.Path;
 import java.util.stream.Stream;
 
 /**
- * Disk-budget guard reserved for the future recording subsystem.
- * Observer Cam does not record video yet; future writers must check this guard before allocating files.
+ * Disk-budget guard shared by the live recorder and future instant-replay buffer.
+ * Writers check this guard before starting and while allocating recording data.
  */
 public final class RecordingStorageBudget {
     public static final long BYTES_PER_GB = 1_000_000_000L;

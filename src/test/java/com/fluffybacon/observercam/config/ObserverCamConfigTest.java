@@ -3,6 +3,8 @@ package com.fluffybacon.observercam.config;
 import com.fluffybacon.observercam.config.ObserverCamConfig.CameraSettings;
 import com.fluffybacon.observercam.recording.InstantReplayLimitMode;
 import com.fluffybacon.observercam.recording.RecordingVideoFormat;
+import com.fluffybacon.observercam.recording.RecordingQuality;
+import com.fluffybacon.observercam.recording.RecordingResolution;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -58,6 +60,11 @@ class ObserverCamConfigTest {
 
         assertEquals(3.0, config.recordingStorageLimitGb);
         assertEquals(RecordingVideoFormat.MP4, config.recordingVideoFormat);
+        assertEquals(RecordingResolution.CURRENT, config.recordingResolution);
+        assertEquals(RecordingQuality.BALANCED, config.recordingQuality);
+        assertEquals(30, config.recordingFrameRate);
+        assertFalse(config.recordingIncludeHud);
+        assertEquals("ffmpeg", config.recordingFfmpegPath);
         assertFalse(config.instantReplayEnabled);
         assertEquals(InstantReplayLimitMode.TIME, config.instantReplayLimitMode);
         assertEquals(2.0, config.instantReplayDurationMinutes);
