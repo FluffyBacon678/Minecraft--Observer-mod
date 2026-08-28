@@ -3,6 +3,7 @@ package com.fluffybacon.observercam.client.recording;
 import com.mojang.blaze3d.platform.NativeImage;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
+import com.mojang.blaze3d.pipeline.RenderTarget;
 import net.minecraft.network.chat.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,7 +21,7 @@ public final class ObserverFrameCapture {
 
     public static void captureIfNeeded(boolean includesHud) {
         ObserverRecordingManager manager = ObserverRecordingManager.get();
-        long session = manager.beginCapture(includesHud);
+        long session = manager.beginMainCapture(includesHud);
         if (session < 0L || !CAPTURE_IN_FLIGHT.compareAndSet(false, true)) {
             return;
         }
@@ -31,12 +32,33 @@ public final class ObserverFrameCapture {
             return;
         }
         try {
-            Screenshot.takeScreenshot(client.getMainRenderTarget(), image -> handleImage(manager, session, image));
+            takeScreenshot(manager, session, client.getMainRenderTarget());
         } catch (Throwable throwable) {
             CAPTURE_IN_FLIGHT.set(false);
             LOGGER.error("Could not submit an Observer Cam framebuffer readback", throwable);
             manager.failCapture(Component.translatable("observercam.recording.error.capture"));
         }
+    }
+
+    public static void captureSecondary(ObserverRecordingManager manager, long session, RenderTarget target) {
+        if (session < 0L || target == null || !CAPTURE_IN_FLIGHT.compareAndSet(false, true)) {
+            return;
+        }
+        try {
+            takeScreenshot(manager, session, target);
+        } catch (Throwable throwable) {
+            CAPTURE_IN_FLIGHT.set(false);
+            LOGGER.error("Could not submit an Observer Cam secondary framebuffer readback", throwable);
+            manager.failCapture(Component.translatable("observercam.recording.error.capture"));
+        }
+    }
+
+    public static boolean isCaptureInFlight() {
+        return CAPTURE_IN_FLIGHT.get();
+    }
+
+    private static void takeScreenshot(ObserverRecordingManager manager, long session, RenderTarget target) {
+        Screenshot.takeScreenshot(target, image -> handleImage(manager, session, image));
     }
 
     private static void handleImage(ObserverRecordingManager manager, long session, NativeImage image) {
@@ -45,10 +67,26 @@ public final class ObserverFrameCapture {
                 manager.failCapture(Component.translatable("observercam.recording.error.capture"));
                 return;
             }
-            int[] pixels = image.getPixelsABGR();
-            byte[] rgba = new byte[Math.multiplyExact(Math.multiplyExact(image.getWidth(), image.getHeight()), 4)];
-            ByteBuffer.wrap(rgba).order(ByteOrder.LITTLE_ENDIAN).asIntBuffer().put(pixels);
-            manager.submitFrame(session, image.getWidth(), image.getHeight(), rgba);
+            int expectedWidth = manager.captureWidth();
+            int expectedHeight = manager.captureHeight();
+            NativeImage resized = null;
+            try {
+                NativeImage captured = image;
+                if (image.getWidth() != expectedWidth || image.getHeight() != expectedHeight) {
+                    resized = new NativeImage(expectedWidth, expectedHeight, false);
+                    image.resizeSubRectTo(0, 0, image.getWidth(), image.getHeight(), resized);
+                    captured = resized;
+                }
+                int[] pixels = captured.getPixelsABGR();
+                byte[] rgba = new byte[Math.multiplyExact(Math.multiplyExact(
+                        captured.getWidth(), captured.getHeight()), 4)];
+                ByteBuffer.wrap(rgba).order(ByteOrder.LITTLE_ENDIAN).asIntBuffer().put(pixels);
+                manager.submitFrame(session, captured.getWidth(), captured.getHeight(), rgba);
+            } finally {
+                if (resized != null) {
+                    resized.close();
+                }
+            }
         } catch (Throwable throwable) {
             LOGGER.error("Could not convert an Observer Cam frame", throwable);
             manager.failCapture(Component.translatable("observercam.recording.error.capture"));

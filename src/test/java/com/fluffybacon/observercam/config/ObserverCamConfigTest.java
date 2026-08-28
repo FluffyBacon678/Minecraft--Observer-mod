@@ -2,6 +2,7 @@ package com.fluffybacon.observercam.config;
 
 import com.fluffybacon.observercam.config.ObserverCamConfig.CameraSettings;
 import com.fluffybacon.observercam.recording.InstantReplayLimitMode;
+import com.fluffybacon.observercam.recording.PictureInPictureResolution;
 import com.fluffybacon.observercam.recording.RecordingVideoFormat;
 import com.fluffybacon.observercam.recording.RecordingQuality;
 import com.fluffybacon.observercam.recording.RecordingResolution;
@@ -64,6 +65,8 @@ class ObserverCamConfigTest {
         assertEquals(RecordingQuality.BALANCED, config.recordingQuality);
         assertEquals(30, config.recordingFrameRate);
         assertFalse(config.recordingIncludeHud);
+        assertEquals(PictureInPictureResolution.BALANCED, config.pictureInPictureResolution);
+        assertEquals(5, config.pictureInPictureFrameRate);
         assertEquals("ffmpeg", config.recordingFfmpegPath);
         assertFalse(config.instantReplayEnabled);
         assertEquals(InstantReplayLimitMode.TIME, config.instantReplayLimitMode);
@@ -98,5 +101,6 @@ class ObserverCamConfigTest {
         assertEquals(RecordingVideoFormat.MP4, RecordingVideoFormat.WEBM.next());
         assertEquals(InstantReplayLimitMode.SIZE, InstantReplayLimitMode.TIME.next());
         assertEquals(InstantReplayLimitMode.TIME, InstantReplayLimitMode.SIZE.next());
+        assertEquals(PictureInPictureResolution.BALANCED, PictureInPictureResolution.PERFORMANCE.next());
     }
 }

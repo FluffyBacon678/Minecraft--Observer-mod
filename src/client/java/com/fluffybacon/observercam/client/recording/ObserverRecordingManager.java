@@ -1,8 +1,10 @@
 package com.fluffybacon.observercam.client.recording;
 
 import com.fluffybacon.observercam.client.ObserverCamClient;
+import com.fluffybacon.observercam.client.ObserverPovController;
 import com.fluffybacon.observercam.client.ObserverRecordingState;
 import com.fluffybacon.observercam.config.ObserverCamConfig;
+import com.fluffybacon.observercam.recording.CaptureSize;
 import com.fluffybacon.observercam.recording.InstantReplayLimitMode;
 import com.fluffybacon.observercam.recording.RecordingAudio;
 import com.fluffybacon.observercam.recording.FFmpegExecutableResolver;
@@ -54,6 +56,8 @@ public final class ObserverRecordingManager {
     private volatile long replayEstimatedBytes;
     private volatile int sourceWidth;
     private volatile int sourceHeight;
+    private volatile int captureWindowWidth;
+    private volatile int captureWindowHeight;
     private volatile int framesPerSecond;
     private volatile boolean includeHud;
     private volatile boolean liveStartPending;
@@ -191,8 +195,27 @@ public final class ObserverRecordingManager {
         }
     }
 
-    public long beginCapture(boolean captureIncludesHud) {
+    public long beginMainCapture(boolean captureIncludesHud) {
+        if (!ObserverCamClient.isViewingObserver()) {
+            return -1L;
+        }
+        return beginCapture(captureIncludesHud, false);
+    }
+
+    public long beginSecondaryCapture() {
+        if (ObserverCamClient.isViewingObserver()) {
+            return -1L;
+        }
+        return beginCapture(false, true);
+    }
+
+    private long beginCapture(boolean captureIncludesHud, boolean cleanSecondaryView) {
         if ((!isRecording() && !isReplayBuffering()) || includeHud != captureIncludesHud) {
+            if (!cleanSecondaryView) {
+                return -1L;
+            }
+        }
+        if (!isRecording() && !isReplayBuffering()) {
             return -1L;
         }
         long now = System.nanoTime();
@@ -204,6 +227,23 @@ public final class ObserverRecordingManager {
             nextCaptureNanos = now + captureIntervalNanos;
         }
         return activeSession;
+    }
+
+    public boolean requiresSecondaryCapture() {
+        return (isRecording() || isReplayBuffering()) && !ObserverCamClient.isViewingObserver();
+    }
+
+    public boolean hasCaptureSource(Minecraft client) {
+        return client != null && client.level != null && client.player != null
+                && ObserverPovController.findOwnedObserver(client) != null;
+    }
+
+    public int captureWidth() {
+        return sourceWidth;
+    }
+
+    public int captureHeight() {
+        return sourceHeight;
     }
 
     public void submitFrame(long session, int width, int height, byte[] rgba) {
@@ -330,6 +370,10 @@ public final class ObserverRecordingManager {
             stop(client, Component.translatable("observercam.recording.stop.pov"));
             return;
         }
+        if (captureWindowChanged(client)) {
+            stop(client, Component.translatable("observercam.recording.stop.resize"));
+            return;
+        }
         FFmpegEncoder current = encoder;
         if (current == null || current.failedWhileRecording()) {
             stop(client, Component.translatable("observercam.recording.stop.encoder"));
@@ -359,6 +403,11 @@ public final class ObserverRecordingManager {
                 replayStartAnnounced = false;
             }
             finishReplay(client, false, false, null);
+            return;
+        }
+        if (captureWindowChanged(client)) {
+            finishReplay(client, false, false,
+                    Component.translatable("observercam.recording.stop.resize"));
             return;
         }
         ReplayBufferEncoder current = replayEncoder;
@@ -557,8 +606,12 @@ public final class ObserverRecordingManager {
         outputDirectory = config.recordingOutputPath();
         Files.createDirectories(outputDirectory);
         verifyStartCapacity(outputDirectory);
-        sourceWidth = Math.max(2, client.getMainRenderTarget().width);
-        sourceHeight = Math.max(2, client.getMainRenderTarget().height);
+        captureWindowWidth = Math.max(2, client.getMainRenderTarget().width);
+        captureWindowHeight = Math.max(2, client.getMainRenderTarget().height);
+        activeResolution = config.recordingResolution;
+        CaptureSize captureSize = activeResolution.captureSize(captureWindowWidth, captureWindowHeight);
+        sourceWidth = captureSize.width();
+        sourceHeight = captureSize.height();
         framesPerSecond = config.recordingFrameRate;
         includeHud = config.recordingIncludeHud;
         activeExecutable = FFmpegExecutableResolver.resolve(config.recordingFfmpegPath);
@@ -567,7 +620,6 @@ public final class ObserverRecordingManager {
             config.save();
         }
         activeFormat = config.recordingVideoFormat;
-        activeResolution = config.recordingResolution;
         activeQuality = config.recordingQuality;
         if (config.recordingAudioEnabled && config.recordingAudioDevice.isBlank()) {
             throw new IOException(Component.translatable("observercam.recording.error.audio_device").getString());
@@ -655,8 +707,13 @@ public final class ObserverRecordingManager {
     }
 
     private static boolean canCaptureObserver(Minecraft client) {
-        return client != null && client.level != null && client.player != null
-                && ObserverCamClient.isViewingObserver();
+        return INSTANCE.hasCaptureSource(client);
+    }
+
+    private boolean captureWindowChanged(Minecraft client) {
+        return client == null || client.getMainRenderTarget() == null
+                || client.getMainRenderTarget().width != captureWindowWidth
+                || client.getMainRenderTarget().height != captureWindowHeight;
     }
 
     private static void verifyStartCapacity(Path directory) throws IOException {

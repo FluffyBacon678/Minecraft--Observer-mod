@@ -1,6 +1,7 @@
 package com.fluffybacon.observercam.config;
 
 import com.fluffybacon.observercam.recording.InstantReplayLimitMode;
+import com.fluffybacon.observercam.recording.PictureInPictureResolution;
 import com.fluffybacon.observercam.recording.RecordingQuality;
 import com.fluffybacon.observercam.recording.RecordingResolution;
 import com.fluffybacon.observercam.recording.RecordingVideoFormat;
@@ -59,6 +60,8 @@ public final class ObserverCamConfig {
     public int recordingFrameRate = 30;
     public boolean recordingIncludeHud = false;
     public boolean pictureInPictureEnabled = false;
+    public PictureInPictureResolution pictureInPictureResolution = PictureInPictureResolution.BALANCED;
+    public int pictureInPictureFrameRate = 5;
     public String recordingFfmpegPath = "ffmpeg";
     public boolean recordingAudioEnabled = false;
     public String recordingAudioDevice = "";
@@ -223,6 +226,7 @@ public final class ObserverCamConfig {
         movementPredictionTicks = clamp(finiteOr(movementPredictionTicks, 5.0), 0.0, 12.0);
         recordingStorageLimitGb = clamp(finiteOr(recordingStorageLimitGb, 3.0), 0.5, 100.0);
         recordingFrameRate = Math.max(15, Math.min(60, recordingFrameRate));
+        pictureInPictureFrameRate = Math.max(2, Math.min(15, pictureInPictureFrameRate));
         instantReplayDurationMinutes = clamp(finiteOr(instantReplayDurationMinutes, 2.0), 0.5, 30.0);
         instantReplayStorageLimitGb = clamp(finiteOr(instantReplayStorageLimitGb, 1.0),
                 0.25, recordingStorageLimitGb);
@@ -237,6 +241,9 @@ public final class ObserverCamConfig {
         }
         if (recordingQuality == null) {
             recordingQuality = RecordingQuality.BALANCED;
+        }
+        if (pictureInPictureResolution == null) {
+            pictureInPictureResolution = PictureInPictureResolution.BALANCED;
         }
         if (recordingFfmpegPath == null || recordingFfmpegPath.isBlank()) {
             recordingFfmpegPath = "ffmpeg";

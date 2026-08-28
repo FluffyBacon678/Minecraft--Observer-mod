@@ -148,7 +148,8 @@ public final class ObserverCamConfigScreen extends Screen {
             RecordingState state = ObserverRecordingManager.get().state();
             recordingButton.setMessage(recordingText());
             recordingButton.active = state == RecordingState.RECORDING
-                    || state == RecordingState.IDLE && ObserverCamClient.isViewingObserver()
+                    || state == RecordingState.IDLE
+                    && ObserverRecordingManager.get().hasCaptureSource(minecraft)
                     && (ObserverRecordingManager.get().replayState() == ReplayState.IDLE
                     || ObserverRecordingManager.get().replayState() == ReplayState.BUFFERING);
         }
@@ -263,7 +264,14 @@ public final class ObserverCamConfigScreen extends Screen {
                                 () -> c.recordingFrameRate, v -> c.recordingFrameRate = (int) Math.round(v)),
                         bool("recording_include_hud", () -> c.recordingIncludeHud, v -> c.recordingIncludeHud = v),
                         bool("picture_in_picture_enabled", () -> c.pictureInPictureEnabled,
-                                ObserverPictureInPicture::setEnabled)
+                                ObserverPictureInPicture::setEnabled),
+                        choice("picture_in_picture_resolution",
+                                () -> Component.translatable("observercam.config.pip_resolution."
+                                        + c.pictureInPictureResolution.id()),
+                                () -> c.pictureInPictureResolution = c.pictureInPictureResolution.next(), false),
+                        number("picture_in_picture_frame_rate", "frames_per_second", 2, 15, 0,
+                                () -> c.pictureInPictureFrameRate,
+                                v -> c.pictureInPictureFrameRate = (int) Math.round(v))
                 );
                 case REPLAY -> List.of(
                         action("save_instant_replay", () -> ObserverRecordingManager.get()
@@ -378,8 +386,11 @@ public final class ObserverCamConfigScreen extends Screen {
         @Override
         protected void init() {
             int x = width / 2 - CONTENT_WIDTH / 2;
-            int y = 46;
-            for (Setting setting : category.settings()) {
+            int y = 43;
+            List<Setting> settings = category.settings();
+            int step = settings.size() <= 1 ? 24
+                    : Math.min(24, Math.max(20, (height - 57 - y) / (settings.size() - 1)));
+            for (Setting setting : settings) {
                 if (setting instanceof NumberSetting number) {
                     addRenderableWidget(new ValueSlider(x, y, CONTENT_WIDTH, number));
                 } else if (setting instanceof BooleanSetting bool) {
@@ -442,7 +453,7 @@ public final class ObserverCamConfigScreen extends Screen {
                             .bounds(x, y, CONTENT_WIDTH, 20)
                             .build());
                 }
-                y += 24;
+                y += step;
             }
             addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, button -> onClose())
                     .bounds(width / 2 - 75, height - 30, 150, 20)

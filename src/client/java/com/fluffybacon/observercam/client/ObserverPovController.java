@@ -2,7 +2,6 @@ package com.fluffybacon.observercam.client;
 
 import com.fluffybacon.observercam.ObserverCam;
 import com.fluffybacon.observercam.entity.ObserverCameraEntity;
-import com.fluffybacon.observercam.client.recording.ObserverRecordingManager;
 import net.minecraft.client.CameraType;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
@@ -114,9 +113,6 @@ public final class ObserverPovController {
             retryTicks = 0;
             return;
         }
-        ObserverRecordingManager.get().stop(client,
-                Component.translatable("observercam.recording.stop.pov"));
-        ObserverRecordingManager.get().discardInstantReplay(client);
         activeObserver = null;
         retryTicks = 0;
         ObserverCameraSmoother.reset();

@@ -24,6 +24,12 @@ public enum RecordingResolution {
         return resolutions[(ordinal() + 1) % resolutions.length];
     }
 
+    public CaptureSize captureSize(int sourceWidth, int sourceHeight) {
+        return this == CURRENT
+                ? CaptureSize.even(sourceWidth, sourceHeight)
+                : CaptureSize.fitInside(sourceWidth, sourceHeight, width, height);
+    }
+
     public String videoFilter() {
         if (this == CURRENT) {
             return "pad=ceil(iw/2)*2:ceil(ih/2)*2";

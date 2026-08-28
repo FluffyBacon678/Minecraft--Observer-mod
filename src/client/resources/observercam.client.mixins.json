@@ -2,6 +2,6 @@
   "required": true,
   "package": "com.fluffybacon.observercam.client.mixin",
   "compatibilityLevel": "JAVA_21",
-  "client": ["CameraMixin", "GameRendererMixin", "LevelRendererMixin", "LocalPlayerMixin"],
+  "client": ["CameraMixin", "GameRendererMixin", "LevelRendererMixin", "LocalPlayerMixin", "MinecraftMixin"],
   "injectors": {"defaultRequire": 1}
 }
