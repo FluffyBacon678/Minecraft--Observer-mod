@@ -144,6 +144,7 @@ public final class ObserverRecordingManager {
                             activeFormat.id().toUpperCase(java.util.Locale.ROOT),
                             Component.translatable(activeAudio.enabled()
                                     ? "observercam.recording.audio.on" : "observercam.recording.audio.off")));
+            status(client, Component.translatable("observercam.recording.status.live"));
             LOGGER.info("Observer recording started: {}x{} at {} FPS -> {}", sourceWidth, sourceHeight,
                     framesPerSecond, created.partialFile());
         } catch (IOException | RuntimeException exception) {
@@ -287,6 +288,8 @@ public final class ObserverRecordingManager {
         invalidateCaptureSession();
         stoppedElapsedNanos = Math.max(0L, System.nanoTime() - startNanos);
         updateObserverLight();
+        status(client, Component.translatable("observercam.recording.status.stopped",
+                formatDuration(stoppedElapsedNanos)));
         FFmpegEncoder finishing = encoder;
         toast(client, Component.translatable("observercam.recording.saving.title"), reason);
 
@@ -651,15 +654,17 @@ public final class ObserverRecordingManager {
     }
 
     private void finalizeRecording(Minecraft client, FFmpegEncoder finishing) {
+        int completedFramesPerSecond = framesPerSecond;
         FFmpegEncoder.RecordingResult result;
         try {
             result = finishing == null
-                    ? new FFmpegEncoder.RecordingResult(false, null, "Encoder was unavailable", 0L, 0L, 0L)
-                    : finishing.stop();
+                    ? new FFmpegEncoder.RecordingResult(false, null, "Encoder was unavailable", 0L, 0L, 0L, 0L)
+                    : finishing.stop(com.fluffybacon.observercam.recording.RecordingTimeline.expectedFrames(
+                            stoppedElapsedNanos, completedFramesPerSecond));
         } catch (RuntimeException exception) {
             LOGGER.error("Unexpected error while finalizing Observer recording", exception);
             result = new FFmpegEncoder.RecordingResult(false,
-                    finishing == null ? null : finishing.partialFile(), safeMessage(exception), 0L, 0L, 0L);
+                    finishing == null ? null : finishing.partialFile(), safeMessage(exception), 0L, 0L, 0L, 0L);
         }
         encoder = null;
         state.set(RecordingState.IDLE);
@@ -671,7 +676,9 @@ public final class ObserverRecordingManager {
                 if (completedResult.successful()) {
                     toast(client, Component.translatable("observercam.recording.saved.title"),
                             Component.translatable("observercam.recording.saved.body",
-                                    completedResult.path().getFileName()));
+                                    completedResult.path().getFileName(),
+                                    formatDuration(framesToNanos(completedResult.writtenFrames(),
+                                            completedFramesPerSecond))));
                 } else {
                     toast(client, Component.translatable("observercam.recording.error.title"),
                             Component.translatable("observercam.recording.error.finalize",
@@ -685,8 +692,10 @@ public final class ObserverRecordingManager {
             }
         }
         if (result.successful()) {
-            LOGGER.info("Observer recording saved to {} ({} written, {} dropped)", result.path(),
-                    result.writtenFrames(), result.droppedFrames());
+            LOGGER.info("Observer recording saved to {} ({} video, {} wall, {} written, {} dropped, {} padded)",
+                    result.path(), formatDuration(framesToNanos(result.writtenFrames(), completedFramesPerSecond)),
+                    formatDuration(stoppedElapsedNanos), result.writtenFrames(),
+                    result.droppedFrames(), result.paddedFrames());
         } else {
             LOGGER.error("Observer recording failed; partial output: {} ({})", result.path(), result.error());
         }
@@ -775,6 +784,21 @@ public final class ObserverRecordingManager {
 
     private static String safeMessage(Exception exception) {
         return exception.getMessage() == null ? exception.getClass().getSimpleName() : exception.getMessage();
+    }
+
+    private static long framesToNanos(long frames, int framesPerSecond) {
+        return framesPerSecond <= 0 ? 0L : frames * TimeUnit.SECONDS.toNanos(1L) / framesPerSecond;
+    }
+
+    private static String formatDuration(long nanos) {
+        long totalSeconds = Math.max(0L, TimeUnit.NANOSECONDS.toSeconds(nanos));
+        return String.format(java.util.Locale.ROOT, "%02d:%02d", totalSeconds / 60L, totalSeconds % 60L);
+    }
+
+    private static void status(Minecraft client, Component message) {
+        if (client != null && client.player != null) {
+            client.player.displayClientMessage(message, true);
+        }
     }
 
     private static void toast(Minecraft client, Component title, Component body) {

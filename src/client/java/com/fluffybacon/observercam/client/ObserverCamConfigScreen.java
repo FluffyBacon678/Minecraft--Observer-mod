@@ -24,6 +24,7 @@ import java.util.function.Supplier;
 public final class ObserverCamConfigScreen extends Screen {
     private static final int CONTENT_WIDTH = 300;
     private final Screen parent;
+    private Button cameramanButton;
     private Button povButton;
     private Button recordingButton;
     private Button pictureInPictureButton;
@@ -40,11 +41,11 @@ public final class ObserverCamConfigScreen extends Screen {
         ObserverCamConfig config = ObserverCamConfig.get();
         BooleanSetting cameraman = bool("cameraman_enabled", () -> config.cameramanEnabled,
                 ObserverCamClient::setCameramanEnabled);
-        addRenderableWidget(Button.builder(toggleText(cameraman), button -> {
+        cameramanButton = addRenderableWidget(Button.builder(cameramanQuickText(cameraman), button -> {
                     cameraman.setter.accept(!cameraman.getter.getAsBoolean());
-                    button.setMessage(toggleText(cameraman));
+                    button.setMessage(cameramanQuickText(cameraman));
                 })
-                .tooltip(Tooltip.create(cameraman.tooltip()))
+                .tooltip(shortcutTooltip(cameraman.tooltip(), ObserverCamClient.cameramanKeyText()))
                 .bounds(x, 46, 148, 20)
                 .build());
         povButton = addRenderableWidget(Button.builder(povText(), button -> {
@@ -58,7 +59,8 @@ public final class ObserverCamConfigScreen extends Screen {
 
         recordingButton = addRenderableWidget(Button.builder(recordingText(), button ->
                         ObserverRecordingManager.get().toggle(minecraft))
-                .tooltip(Tooltip.create(Component.translatable("observercam.config.recording.tooltip")))
+                .tooltip(shortcutTooltip(Component.translatable("observercam.config.recording.tooltip"),
+                        ObserverCamClient.recordingKeyText()))
                 .bounds(x, 70, 148, 20)
                 .build());
         pictureInPictureButton = addRenderableWidget(Button.builder(pictureInPictureText(), button -> {
@@ -104,6 +106,18 @@ public final class ObserverCamConfigScreen extends Screen {
         return Component.translatable("observercam.config.value", setting.label(), state);
     }
 
+    private static Component cameramanQuickText(BooleanSetting setting) {
+        Component state = Component.translatable(setting.getter.getAsBoolean()
+                ? "observercam.config.on" : "observercam.config.off");
+        return Component.translatable("observercam.config.quick.cameraman", state,
+                ObserverCamClient.cameramanKeyText());
+    }
+
+    private static Tooltip shortcutTooltip(Component description, Component key) {
+        return Tooltip.create(description.copy().append("\n")
+                .append(Component.translatable("observercam.config.shortcut", key)));
+    }
+
     private static Component povText() {
         if (ObserverCamClient.isViewingObserver()) {
             return Component.translatable("observercam.config.pov.exit");
@@ -113,12 +127,21 @@ public final class ObserverCamConfigScreen extends Screen {
     }
 
     private static Component recordingText() {
-        return switch (ObserverRecordingManager.get().state()) {
-            case RECORDING -> Component.translatable("observercam.config.recording.stop");
+        ObserverRecordingManager manager = ObserverRecordingManager.get();
+        Component action = switch (manager.state()) {
+            case RECORDING -> Component.translatable("observercam.config.recording.stop_time",
+                    formatTime(manager.elapsedNanos()));
             case STARTING -> Component.translatable("observercam.config.recording.starting");
             case FINALIZING -> Component.translatable("observercam.config.recording.saving");
             case IDLE -> Component.translatable("observercam.config.recording.start");
         };
+        return Component.translatable("observercam.config.quick.recording", action,
+                ObserverCamClient.recordingKeyText());
+    }
+
+    private static String formatTime(long elapsedNanos) {
+        long seconds = Math.max(0L, java.util.concurrent.TimeUnit.NANOSECONDS.toSeconds(elapsedNanos));
+        return String.format(Locale.ROOT, "%02d:%02d", seconds / 60L, seconds % 60L);
     }
 
     private static Component pictureInPictureText() {
@@ -177,6 +200,11 @@ public final class ObserverCamConfigScreen extends Screen {
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float delta) {
+        if (cameramanButton != null) {
+            BooleanSetting cameraman = bool("cameraman_enabled",
+                    () -> ObserverCamConfig.get().cameramanEnabled, ObserverCamClient::setCameramanEnabled);
+            cameramanButton.setMessage(cameramanQuickText(cameraman));
+        }
         if (povButton != null) {
             povButton.setMessage(povText());
             povButton.active = minecraft != null && minecraft.level != null && minecraft.player != null;

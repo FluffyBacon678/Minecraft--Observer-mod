@@ -4,6 +4,7 @@ import com.fluffybacon.observercam.recording.FFmpegCommand;
 import com.fluffybacon.observercam.recording.RecordingAudio;
 import com.fluffybacon.observercam.recording.RecordingQuality;
 import com.fluffybacon.observercam.recording.RecordingResolution;
+import com.fluffybacon.observercam.recording.RecordingTimeline;
 import com.fluffybacon.observercam.recording.RecordingVideoFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,6 +35,7 @@ final class FFmpegEncoder {
     private final AtomicLong acceptedFrames = new AtomicLong();
     private final AtomicLong writtenFrames = new AtomicLong();
     private final AtomicLong droppedFrames = new AtomicLong();
+    private final AtomicLong paddedFrames = new AtomicLong();
     private final AtomicReference<Throwable> writerFailure = new AtomicReference<>();
     private final String executable;
     private final RecordingVideoFormat format;
@@ -49,6 +51,7 @@ final class FFmpegEncoder {
 
     private Process process;
     private Thread writerThread;
+    private byte[] lastFrame;
 
     FFmpegEncoder(String executable, RecordingVideoFormat format, RecordingResolution resolution,
                   RecordingQuality quality, RecordingAudio audio, int width, int height,
@@ -106,6 +109,7 @@ final class FFmpegEncoder {
         if (!accepting.get()) {
             return false;
         }
+        lastFrame = frame;
         if (!queue.offer(frame)) {
             droppedFrames.incrementAndGet();
             return false;
@@ -114,8 +118,9 @@ final class FFmpegEncoder {
         return true;
     }
 
-    RecordingResult stop() {
+    RecordingResult stop(long expectedFrameCount) {
         accepting.set(false);
+        padTimeline(expectedFrameCount);
         signalEndOfStream();
         joinWriter();
         int exitCode = awaitProcess();
@@ -135,7 +140,7 @@ final class FFmpegEncoder {
                             errorLog, exception);
                 }
                 return new RecordingResult(true, finalFile, null, acceptedFrames.get(),
-                        writtenFrames.get(), droppedFrames.get());
+                        writtenFrames.get(), droppedFrames.get(), paddedFrames.get());
             }
         }
 
@@ -144,7 +149,31 @@ final class FFmpegEncoder {
                 : "FFmpeg exited with code " + exitCode;
         writeFailureSummary(message);
         return new RecordingResult(false, partialFile, message, acceptedFrames.get(),
-                writtenFrames.get(), droppedFrames.get());
+                writtenFrames.get(), droppedFrames.get(), paddedFrames.get());
+    }
+
+    private void padTimeline(long expectedFrameCount) {
+        byte[] frame = lastFrame;
+        int requested = RecordingTimeline.finalPaddingFrames(
+                expectedFrameCount, acceptedFrames.get(), framesPerSecond);
+        if (frame == null || requested <= 0 || writerThread == null || !writerThread.isAlive()) {
+            return;
+        }
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(3L);
+        int enqueued = 0;
+        while (enqueued < requested && System.nanoTime() < deadline) {
+            try {
+                if (!queue.offer(frame, 100L, TimeUnit.MILLISECONDS)) {
+                    continue;
+                }
+                acceptedFrames.incrementAndGet();
+                paddedFrames.incrementAndGet();
+                enqueued++;
+            } catch (InterruptedException exception) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+        }
     }
 
     boolean failedWhileRecording() {
@@ -288,6 +317,6 @@ final class FFmpegEncoder {
     }
 
     record RecordingResult(boolean successful, Path path, String error, long acceptedFrames,
-                           long writtenFrames, long droppedFrames) {
+                           long writtenFrames, long droppedFrames, long paddedFrames) {
     }
 }

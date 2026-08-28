@@ -20,6 +20,9 @@ import java.util.List;
 
 public final class CandidateGenerator {
     private static final double[] ANGLES = {-145.0, -90.0, -45.0, 0.0, 45.0, 90.0, 145.0, 180.0};
+    private static final double[] CONFINED_RECOVERY_ANGLES = {0.0, 180.0, -90.0, 90.0, -45.0, 45.0, -135.0, 135.0};
+    private static final double[] CONFINED_RECOVERY_DISTANCES = {1.25, 2.1, 3.0};
+    private static final double CONFINED_RECOVERY_HEIGHT = 1.35;
     private static final double SECONDARY_SUBJECT_RADIUS = 12.0;
     private static final int MAX_SECONDARY_SUBJECT_CANDIDATES = 10;
     private static final int MAX_SECONDARY_SUBJECTS = 4;
@@ -92,12 +95,38 @@ public final class CandidateGenerator {
         addCandidate(candidates, observer, target, subjects, rotateY(forward, Math.toRadians(65.0)),
                 desiredDistance * 0.82, config.cameraHeight - 0.45, desiredDistance,
                 9, previousAngle, false, config);
+        if (forceEmergencyRecovery) {
+            addConfinedRecoveryCandidates(candidates, observer, target, subjects, forward,
+                    desiredDistance, previousAngle, config);
+        }
 
         CameraCandidate best = candidates.stream()
                 .filter(emergencyRecovery ? CameraCandidate::safeTeleportDestination : CameraCandidate::valid)
                 .max(Comparator.comparingDouble(CameraCandidate::score))
                 .orElse(null);
         return new CameraPlan(List.copyOf(candidates), best, indoor, desiredDistance, emergencyRecovery);
+    }
+
+    private static void addConfinedRecoveryCandidates(
+            List<CameraCandidate> candidates,
+            ObserverCameraEntity observer,
+            Entity target,
+            SubjectGroup subjects,
+            Vec3 forward,
+            double desiredDistance,
+            int previousAngle,
+            ObserverCamConfig config
+    ) {
+        double recoveryDesiredDistance = Math.min(2.1, desiredDistance);
+        for (int angle = 0; angle < CONFINED_RECOVERY_ANGLES.length; angle++) {
+            Vec3 radial = rotateY(forward, Math.toRadians(CONFINED_RECOVERY_ANGLES[angle]));
+            for (double configuredDistance : CONFINED_RECOVERY_DISTANCES) {
+                double distance = Math.min(configuredDistance, Math.max(1.25, desiredDistance));
+                addCandidate(candidates, observer, target, subjects, radial, distance,
+                        CONFINED_RECOVERY_HEIGHT, recoveryDesiredDistance,
+                        10 + angle, previousAngle, angle == 0, config);
+            }
+        }
     }
 
     private static void addCandidate(

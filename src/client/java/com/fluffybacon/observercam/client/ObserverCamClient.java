@@ -18,21 +18,26 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.minecraft.client.KeyMapping;
+import net.minecraft.network.chat.Component;
 import net.minecraft.client.renderer.entity.EntityRenderers;
 import net.minecraft.resources.Identifier;
 import org.lwjgl.glfw.GLFW;
 
 public final class ObserverCamClient implements ClientModInitializer {
     private static final ObserverPovController POV = new ObserverPovController();
+    private static KeyMapping cameramanKey;
+    private static KeyMapping recordKey;
 
     @Override
     public void onInitializeClient() {
         EntityRenderers.register(ObserverCam.OBSERVER_CAMERA, ObserverCameraRenderer::new);
 
         KeyMapping.Category category = KeyMapping.Category.register(Identifier.fromNamespaceAndPath(ObserverCam.MOD_ID, "controls"));
+        cameramanKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
+                "key.observercam.toggle_cameraman", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_UNKNOWN, category));
         KeyMapping viewKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
                 "key.observercam.toggle_view", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_O, category));
-        KeyMapping recordKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
+        recordKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
                 "key.observercam.toggle_recording", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_UNKNOWN, category));
         KeyMapping pictureInPictureKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
                 "key.observercam.toggle_pip", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_UNKNOWN, category));
@@ -65,6 +70,9 @@ public final class ObserverCamClient implements ClientModInitializer {
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath(ObserverCam.MOD_ID, "picture_in_picture"),
                 (graphics, tickCounter) -> ObserverPictureInPicture.render(graphics));
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            while (cameramanKey.consumeClick()) {
+                toggleCameraman();
+            }
             while (viewKey.consumeClick()) {
                 POV.toggle(client);
             }
@@ -88,6 +96,24 @@ public final class ObserverCamClient implements ClientModInitializer {
         ObserverCamConfig.get().save();
         syncCameraSettings();
         sendCameramanEnabled(enabled);
+    }
+
+    public static void toggleCameraman() {
+        setCameramanEnabled(!ObserverCamConfig.get().cameramanEnabled);
+    }
+
+    public static Component cameramanKeyText() {
+        return keyText(cameramanKey);
+    }
+
+    public static Component recordingKeyText() {
+        return keyText(recordKey);
+    }
+
+    private static Component keyText(KeyMapping mapping) {
+        return mapping == null || mapping.isUnbound()
+                ? Component.translatable("observercam.config.key.unbound")
+                : mapping.getTranslatedKeyMessage();
     }
 
     public static void syncCameraSettings() {

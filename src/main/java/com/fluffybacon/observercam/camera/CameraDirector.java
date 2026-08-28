@@ -10,8 +10,8 @@ import net.minecraft.world.phys.Vec3;
 
 public final class CameraDirector {
     public static final int PLAN_INTERVAL_TICKS = 4;
-    private static final int FAILED_PLAN_ATTEMPTS_BEFORE_RECOVERY = 3;
-    private static final int STALLED_TICKS_BEFORE_RECOVERY = 10;
+    private static final int FAILED_PLAN_ATTEMPTS_BEFORE_RECOVERY = 10;
+    private static final int STALLED_TICKS_BEFORE_RECOVERY = 40;
     private static final double HORIZONTAL_FOCUS_DEAD_ZONE = 0.75;
     private static final double VERTICAL_FOCUS_DEAD_ZONE = 0.55;
     private static final double FOCUS_RESPONSE = 0.42;
@@ -34,10 +34,12 @@ public final class CameraDirector {
     private Vec3 shotForward;
     private Vec3 trackedTargetAnchor;
     private final MotionController motionController = new MotionController();
+    private final LineOfSightRecoveryTracker lineOfSightRecovery = new LineOfSightRecoveryTracker();
 
     public void tick(ObserverCameraEntity observer, Entity target) {
         ObserverCamConfig config = ObserverCameraManager.cameraConfigFor(observer);
         ticksInShot++;
+        updateLineOfSightRecovery(observer, target);
         boolean planThisTick = desiredPosition == null || forcedRecoveryPending
                 || observer.tickCount % PLAN_INTERVAL_TICKS == 0;
         if (planThisTick) {
@@ -57,6 +59,7 @@ public final class CameraDirector {
             observer.setYRot(rotation.yaw());
             observer.setXRot(rotation.pitch());
             emergencyTeleportPending = false;
+            lineOfSightRecovery.reset();
             state = CameraState.EMERGENCY_RECOVERY;
         }
 
@@ -208,6 +211,19 @@ public final class CameraDirector {
         return new Vec3(target.getX(),
                 target.getBoundingBox().minY + target.getBoundingBox().getYsize() * 0.72,
                 target.getZ());
+    }
+
+    private void updateLineOfSightRecovery(ObserverCameraEntity observer, Entity target) {
+        if (observer.tickCount % PLAN_INTERVAL_TICKS != 0) {
+            return;
+        }
+        Vec3 center = observer.position().add(0.0, 0.5, 0.0);
+        Vec3 origin = center.add(CameraTransform.forward(observer.getYRot(), observer.getXRot())
+                .scale(CameraTransform.FACE_OFFSET));
+        int visibleSamples = VisibilityProbe.visibleSamples(observer.level(), observer, origin, target);
+        if (lineOfSightRecovery.sample(visibleSamples, PLAN_INTERVAL_TICKS)) {
+            forcedRecoveryPending = true;
+        }
     }
 
     private boolean viableCandidate(CameraCandidate candidate) {

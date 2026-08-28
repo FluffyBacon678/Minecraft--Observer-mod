@@ -18,4 +18,12 @@ public final class RecordingTimeline {
         long missing = Math.max(1L, expectedFrames - timelineFrames);
         return (int) Math.min(MAX_CATCH_UP_FRAMES, missing);
     }
+
+    /** Pads at most one second during finalization so small encoder stalls do not shorten the clip. */
+    public static int finalPaddingFrames(long expectedFrames, long acceptedFrames, int framesPerSecond) {
+        if (expectedFrames <= acceptedFrames || framesPerSecond <= 0) {
+            return 0;
+        }
+        return (int) Math.min(expectedFrames - acceptedFrames, framesPerSecond);
+    }
 }

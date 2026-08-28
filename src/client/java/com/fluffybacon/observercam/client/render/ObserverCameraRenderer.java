@@ -1,9 +1,11 @@
 package com.fluffybacon.observercam.client.render;
 
+import com.fluffybacon.observercam.client.ObserverPictureInPicture;
 import com.fluffybacon.observercam.entity.ObserverCameraEntity;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.state.CameraRenderState;
@@ -28,8 +30,8 @@ public final class ObserverCameraRenderer extends EntityRenderer<ObserverCameraE
             poseStack.mulPose(Axis.XP.rotationDegrees(state.pitch));
             poseStack.translate(-0.5, -0.5, -0.5);
             collector.submitMovingBlock(poseStack, state.block);
-            if (state.recording) {
-                submitRecordingEyes(poseStack, collector);
+            if (state.activeLight) {
+                submitActiveEyes(poseStack, collector);
             }
             poseStack.popPose();
         }
@@ -52,10 +54,14 @@ public final class ObserverCameraRenderer extends EntityRenderer<ObserverCameraE
         state.block.level = entity.level();
         state.yaw = entity.getYRot(partialTick);
         state.pitch = entity.getXRot(partialTick);
-        state.recording = entity.isRecording();
+        var player = Minecraft.getInstance().player;
+        boolean localPictureInPicture = player != null
+                && ObserverPictureInPicture.isEnabled()
+                && entity.isOwnedBy(player.getUUID());
+        state.activeLight = entity.isRecording() || localPictureInPicture;
     }
 
-    private static void submitRecordingEyes(PoseStack poseStack, SubmitNodeCollector collector) {
+    private static void submitActiveEyes(PoseStack poseStack, SubmitNodeCollector collector) {
         collector.submitCustomGeometry(poseStack, RenderTypes.debugQuads(), (pose, vertices) -> {
             submitEye(pose, vertices, 0.22F, 0.38F);
             submitEye(pose, vertices, 0.62F, 0.78F);
@@ -64,10 +70,10 @@ public final class ObserverCameraRenderer extends EntityRenderer<ObserverCameraE
 
     private static void submitEye(PoseStack.Pose pose, com.mojang.blaze3d.vertex.VertexConsumer vertices,
                                   float left, float right) {
-        int redstoneRed = 0xFFFF1808;
-        float bottom = 0.48F;
-        float top = 0.64F;
-        float front = 1.002F;
+        int redstoneRed = 0xFFFF2008;
+        float bottom = 0.44F;
+        float top = 0.68F;
+        float front = 1.006F;
         vertices.addVertex(pose, left, bottom, front).setColor(redstoneRed);
         vertices.addVertex(pose, right, bottom, front).setColor(redstoneRed);
         vertices.addVertex(pose, right, top, front).setColor(redstoneRed);

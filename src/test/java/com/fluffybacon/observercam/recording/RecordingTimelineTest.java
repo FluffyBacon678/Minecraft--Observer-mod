@@ -19,4 +19,11 @@ class RecordingTimelineTest {
         assertEquals(RecordingTimeline.MAX_CATCH_UP_FRAMES,
                 RecordingTimeline.copiesForCapture(100L, 9L));
     }
+
+    @Test
+    void finalPaddingRecoversSmallGapsWithoutCreatingAnUnboundedFreezeFrame() {
+        assertEquals(4, RecordingTimeline.finalPaddingFrames(152L, 148L, 30));
+        assertEquals(30, RecordingTimeline.finalPaddingFrames(500L, 100L, 30));
+        assertEquals(0, RecordingTimeline.finalPaddingFrames(148L, 152L, 30));
+    }
 }
