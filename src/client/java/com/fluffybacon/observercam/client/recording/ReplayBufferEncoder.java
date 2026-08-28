@@ -64,12 +64,15 @@ final class ReplayBufferEncoder {
         this.framesPerSecond = framesPerSecond;
         bufferRoot = ReplayBufferFiles.root(outputDirectory);
         Files.createDirectories(bufferRoot);
+        if (Files.isSymbolicLink(bufferRoot)) {
+            throw new IOException("Unsafe replay buffer root");
+        }
         sessionDirectory = bufferRoot.resolve("session-" + UUID.randomUUID()).normalize();
         if (!sessionDirectory.getParent().equals(bufferRoot)) {
             throw new IOException("Unsafe replay buffer path");
         }
         Files.createDirectories(sessionDirectory);
-        Files.writeString(ReplayBufferFiles.marker(sessionDirectory), "Observer Cam instant replay buffer v1\n");
+        Files.writeString(ReplayBufferFiles.marker(sessionDirectory), ReplayBufferFiles.OWNER_MARKER_CONTENT);
         errorLog = sessionDirectory.resolve("buffer.ffmpeg.log");
         segmentExtension = FFmpegCommand.replaySegmentExtension(format);
         segmentPattern = sessionDirectory.resolve("segment-%08d." + segmentExtension);
@@ -81,14 +84,34 @@ final class ReplayBufferEncoder {
         builder.redirectError(errorLog.toFile());
         try {
             process = builder.start();
-        } catch (IOException exception) {
-            deleteOwnedSession(sessionDirectory);
+            accepting.set(true);
+            writerThread = new Thread(this::writeFrames, "ObserverCam-Replay-Writer");
+            writerThread.setDaemon(true);
+            writerThread.start();
+        } catch (IOException | RuntimeException exception) {
+            cleanupFailedStart(exception);
             throw exception;
         }
-        accepting.set(true);
-        writerThread = new Thread(this::writeFrames, "ObserverCam-Replay-Writer");
-        writerThread.setDaemon(true);
-        writerThread.start();
+    }
+
+    private void cleanupFailedStart(Exception failure) {
+        accepting.set(false);
+        if (process != null && process.isAlive()) {
+            process.destroyForcibly();
+            try {
+                process.waitFor(2L, TimeUnit.SECONDS);
+            } catch (InterruptedException exception) {
+                Thread.currentThread().interrupt();
+                failure.addSuppressed(exception);
+            }
+        }
+        try {
+            if (!deleteOwnedSession(sessionDirectory)) {
+                failure.addSuppressed(new IOException("Unsafe replay buffer path was preserved"));
+            }
+        } catch (IOException exception) {
+            failure.addSuppressed(exception);
+        }
     }
 
     boolean submit(byte[] frame) {

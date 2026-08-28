@@ -196,6 +196,8 @@
   "observercam.recording.stop.storage": "Storage limit reached; closing the video safely…",
   "observercam.recording.stop.storage_check": "Storage could not be verified; stopping safely…",
   "observercam.recording.stop.resize": "Window size changed; closing this video safely…",
+  "observercam.recording.folder.error.title": "Could not open video folder",
+  "observercam.recording.folder.error.body": "%s",
 
   "observercam.replay.started.title": "Instant replay is buffering",
   "observercam.replay.started.body": "Press F9 whenever you want to save the recent Observer footage.",

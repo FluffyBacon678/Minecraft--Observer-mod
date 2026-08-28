@@ -27,10 +27,13 @@ public final class ObserverRecordingManager {
     private static final Logger LOGGER = LoggerFactory.getLogger("ObserverCam/Recorder");
     private static final ObserverRecordingManager INSTANCE = new ObserverRecordingManager();
     private static final SystemToast.SystemToastId TOAST_ID = new SystemToast.SystemToastId(5_000L);
-    private static final long MINIMUM_START_BUDGET = 64_000_000L;
-    private static final long CAP_STOP_HEADROOM = 16_000_000L;
+    private static final long MINIMUM_START_BUDGET = 128_000_000L;
+    private static final long CAP_STOP_HEADROOM = 128_000_000L;
     private static final long DISK_FREE_RESERVE = 128_000_000L;
-    private static final long STORAGE_CHECK_INTERVAL = TimeUnit.SECONDS.toNanos(1L);
+    private static final long STORAGE_CHECK_INTERVAL = TimeUnit.MILLISECONDS.toNanos(500L);
+    private static final long LIVE_FINALIZER_SHUTDOWN_SECONDS = 60L;
+    private static final long REPLAY_FINALIZER_SHUTDOWN_SECONDS = 120L;
+    private static final long INTERRUPTED_FINALIZER_GRACE_SECONDS = 5L;
 
     private final AtomicReference<RecordingState> state = new AtomicReference<>(RecordingState.IDLE);
     private final AtomicReference<ReplayState> replayState = new AtomicReference<>(ReplayState.IDLE);
@@ -250,7 +253,12 @@ public final class ObserverRecordingManager {
         Thread finalizer = new Thread(() -> finalizeRecording(client, finishing), "ObserverCam-Finalize");
         finalizer.setDaemon(true);
         finalizerThread = finalizer;
-        finalizer.start();
+        try {
+            finalizer.start();
+        } catch (RuntimeException exception) {
+            LOGGER.error("Could not start the recording finalizer thread; finalizing synchronously", exception);
+            finalizer.run();
+        }
     }
 
     public void shutdown(Minecraft client) {
@@ -260,7 +268,7 @@ public final class ObserverRecordingManager {
             updateObserverLight();
             finalizeRecording(client, encoder);
         } else {
-            joinFinalizer(finalizerThread, 35L);
+            joinFinalizer(finalizerThread, LIVE_FINALIZER_SHUTDOWN_SECONDS, "recording");
         }
 
         if (replayState.compareAndSet(ReplayState.BUFFERING, ReplayState.STOPPING)) {
@@ -272,7 +280,7 @@ public final class ObserverRecordingManager {
             replayEncoder = null;
             replayState.set(ReplayState.IDLE);
         } else {
-            joinFinalizer(replayFinalizerThread, 65L);
+            joinFinalizer(replayFinalizerThread, REPLAY_FINALIZER_SHUTDOWN_SECONDS, "instant replay");
         }
         ObserverRecordingState.setActive(false);
     }
@@ -462,23 +470,36 @@ public final class ObserverRecordingManager {
         }
 
         Thread finalizer = new Thread(() -> {
-            ReplayBufferEncoder.ReplaySnapshot snapshot = finishing == null ? null : finishing.stop();
+            Component completionFailure = failureToast;
             ReplayExporter.ExportResult export = null;
-            if (save) {
-                export = ReplayExporter.export(executable, format, finishingOutput, snapshot);
-            } else {
-                discardSnapshot(snapshot);
+            try {
+                ReplayBufferEncoder.ReplaySnapshot snapshot = finishing == null ? null : finishing.stop();
+                if (save) {
+                    export = ReplayExporter.export(executable, format, finishingOutput, snapshot);
+                } else {
+                    discardSnapshot(snapshot);
+                }
+            } catch (RuntimeException exception) {
+                LOGGER.error("Unexpected error while finalizing Observer instant replay", exception);
+                completionFailure = Component.translatable("observercam.recording.error.generic",
+                        safeMessage(exception));
+                if (save) {
+                    export = new ReplayExporter.ExportResult(false,
+                            finishing == null ? null : finishing.sessionDirectory(), safeMessage(exception));
+                }
             }
             replayEncoder = null;
-            replayFinalizerThread = null;
             replayState.set(ReplayState.IDLE);
+            replayFinalizerThread = null;
             updateObserverLight();
 
             ReplayExporter.ExportResult completedExport = export;
+            Component reportedFailure = completionFailure;
+            boolean resumeLiveRecording = startLiveAfter && completionFailure == null;
             if (client != null) {
-                client.execute(() -> {
-                    if (failureToast != null) {
-                        toast(client, Component.translatable("observercam.replay.error.title"), failureToast);
+                Runnable notifyCompletion = () -> {
+                    if (reportedFailure != null) {
+                        toast(client, Component.translatable("observercam.replay.error.title"), reportedFailure);
                     } else if (save && completedExport != null && completedExport.successful()) {
                         toast(client, Component.translatable("observercam.replay.saved.title"),
                                 Component.translatable("observercam.replay.saved.body",
@@ -489,11 +510,19 @@ public final class ObserverRecordingManager {
                         toast(client, Component.translatable("observercam.replay.error.title"),
                                 Component.translatable("observercam.replay.error.export", error));
                     }
-                    if (startLiveAfter) {
+                    if (resumeLiveRecording) {
                         liveStartPending = false;
                         start(client);
+                    } else if (startLiveAfter) {
+                        liveStartPending = false;
                     }
-                });
+                };
+                try {
+                    client.execute(notifyCompletion);
+                } catch (RuntimeException exception) {
+                    liveStartPending = false;
+                    LOGGER.warn("Could not show the instant replay completion message", exception);
+                }
             } else if (startLiveAfter) {
                 liveStartPending = false;
             }
@@ -507,7 +536,12 @@ public final class ObserverRecordingManager {
         }, save ? "ObserverCam-Replay-Save" : "ObserverCam-Replay-Stop");
         finalizer.setDaemon(true);
         replayFinalizerThread = finalizer;
-        finalizer.start();
+        try {
+            finalizer.start();
+        } catch (RuntimeException exception) {
+            LOGGER.error("Could not start the replay finalizer thread; finalizing synchronously", exception);
+            finalizer.run();
+        }
     }
 
     private void stopForCaptureProblem(Minecraft client, Component reason) {
@@ -565,23 +599,38 @@ public final class ObserverRecordingManager {
     }
 
     private void finalizeRecording(Minecraft client, FFmpegEncoder finishing) {
-        FFmpegEncoder.RecordingResult result = finishing == null
-                ? new FFmpegEncoder.RecordingResult(false, null, "Encoder was unavailable", 0L, 0L, 0L)
-                : finishing.stop();
+        FFmpegEncoder.RecordingResult result;
+        try {
+            result = finishing == null
+                    ? new FFmpegEncoder.RecordingResult(false, null, "Encoder was unavailable", 0L, 0L, 0L)
+                    : finishing.stop();
+        } catch (RuntimeException exception) {
+            LOGGER.error("Unexpected error while finalizing Observer recording", exception);
+            result = new FFmpegEncoder.RecordingResult(false,
+                    finishing == null ? null : finishing.partialFile(), safeMessage(exception), 0L, 0L, 0L);
+        }
         encoder = null;
-        finalizerThread = null;
         state.set(RecordingState.IDLE);
+        finalizerThread = null;
         updateObserverLight();
+        FFmpegEncoder.RecordingResult completedResult = result;
         if (client != null) {
-            client.execute(() -> {
-                if (result.successful()) {
+            Runnable notifyCompletion = () -> {
+                if (completedResult.successful()) {
                     toast(client, Component.translatable("observercam.recording.saved.title"),
-                            Component.translatable("observercam.recording.saved.body", result.path().getFileName()));
+                            Component.translatable("observercam.recording.saved.body",
+                                    completedResult.path().getFileName()));
                 } else {
                     toast(client, Component.translatable("observercam.recording.error.title"),
-                            Component.translatable("observercam.recording.error.finalize", result.error()));
+                            Component.translatable("observercam.recording.error.finalize",
+                                    completedResult.error()));
                 }
-            });
+            };
+            try {
+                client.execute(notifyCompletion);
+            } catch (RuntimeException exception) {
+                LOGGER.warn("Could not show the recording completion message", exception);
+            }
         }
         if (result.successful()) {
             LOGGER.info("Observer recording saved to {} ({} written, {} dropped)", result.path(),
@@ -596,7 +645,10 @@ public final class ObserverRecordingManager {
             return;
         }
         try {
-            ReplayBufferEncoder.deleteOwnedSession(snapshot.sessionDirectory());
+            if (!ReplayBufferEncoder.deleteOwnedSession(snapshot.sessionDirectory())) {
+                LOGGER.warn("A replay buffer failed the ownership check and was preserved: {}",
+                        snapshot.sessionDirectory());
+            }
         } catch (IOException exception) {
             LOGGER.warn("Could not remove a private instant replay buffer", exception);
         }
@@ -611,7 +663,7 @@ public final class ObserverRecordingManager {
         long remainingBudget = RecordingStorageBudget.remainingBytes(directory);
         long usableDisk = Files.getFileStore(directory).getUsableSpace();
         if (remainingBudget < MINIMUM_START_BUDGET) {
-            throw new IOException("Less than 64 MB remains under the configured recording cap");
+            throw new IOException("Less than 128 MB remains under the configured recording cap");
         }
         if (usableDisk < DISK_FREE_RESERVE + MINIMUM_START_BUDGET) {
             throw new IOException("The selected disk does not have enough free space");
@@ -636,14 +688,25 @@ public final class ObserverRecordingManager {
         ObserverRecordingState.setActive(isRecording() || isReplayBuffering());
     }
 
-    private static void joinFinalizer(Thread thread, long seconds) {
+    private static void joinFinalizer(Thread thread, long seconds, String description) {
         if (thread == null || thread == Thread.currentThread()) {
             return;
         }
         try {
             thread.join(TimeUnit.SECONDS.toMillis(seconds));
+            if (thread.isAlive()) {
+                LOGGER.warn("{} finalization exceeded {} seconds; interrupting it for safe shutdown",
+                        description, seconds);
+                thread.interrupt();
+                thread.join(TimeUnit.SECONDS.toMillis(INTERRUPTED_FINALIZER_GRACE_SECONDS));
+                if (thread.isAlive()) {
+                    LOGGER.error("{} finalizer did not stop after interruption; partial diagnostics are preserved",
+                            description);
+                }
+            }
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
+            thread.interrupt();
         }
     }
 

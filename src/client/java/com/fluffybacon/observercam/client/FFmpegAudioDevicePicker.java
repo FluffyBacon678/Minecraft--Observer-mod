@@ -16,7 +16,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /** Discovers FFmpeg DirectShow audio inputs and lets the player explicitly select one. */
@@ -61,21 +64,34 @@ public final class FFmpegAudioDevicePicker {
             builder.redirectErrorStream(true);
             process = builder.start();
             process.getOutputStream().close();
-            String listing = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+            Process running = process;
+            FutureTask<byte[]> outputRead = new FutureTask<>(() -> running.getInputStream().readAllBytes());
+            Thread outputReader = new Thread(outputRead, "ObserverCam-Audio-Scan-Output");
+            outputReader.setDaemon(true);
+            outputReader.start();
             if (!process.waitFor(10L, TimeUnit.SECONDS)) {
                 process.destroyForcibly();
                 throw new IOException("FFmpeg audio-device scan timed out");
             }
+            String listing = new String(outputRead.get(2L, TimeUnit.SECONDS), StandardCharsets.UTF_8);
             List<String> all = FFmpegAudioDevices.parseDirectShowListing(listing);
             return FFmpegAudioDevices.likelyGameAudioDevices(all);
         } catch (IOException exception) {
             throw new IllegalStateException(exception);
+        } catch (ExecutionException | TimeoutException exception) {
+            throw new IllegalStateException("Could not read the FFmpeg audio-device list", exception);
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
             throw new IllegalStateException(exception);
         } finally {
             if (process != null && process.isAlive()) {
                 process.destroyForcibly();
+            }
+            if (process != null) {
+                try {
+                    process.getInputStream().close();
+                } catch (IOException ignored) {
+                }
             }
         }
     }

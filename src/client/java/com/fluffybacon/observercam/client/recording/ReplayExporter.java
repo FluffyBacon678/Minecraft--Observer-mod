@@ -2,6 +2,8 @@ package com.fluffybacon.observercam.client.recording;
 
 import com.fluffybacon.observercam.recording.FFmpegCommand;
 import com.fluffybacon.observercam.recording.RecordingVideoFormat;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.AtomicMoveNotSupportedException;
@@ -14,6 +16,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 final class ReplayExporter {
+    private static final Logger LOGGER = LoggerFactory.getLogger("ObserverCam/Recorder");
     private static final DateTimeFormatter FILE_STAMP = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss-SSS");
 
     private ReplayExporter() {
@@ -26,22 +29,24 @@ final class ReplayExporter {
                     snapshot == null ? "Replay buffer was unavailable" : snapshot.error());
         }
 
+        Process process = null;
+        Path errorLog = null;
         try {
             Files.createDirectories(outputDirectory);
             String base = uniqueBaseName(outputDirectory, format);
             Path finalFile = outputDirectory.resolve(base + "." + format.id());
             Path partialFile = outputDirectory.resolve(base + ".partial." + format.id());
-            Path errorLog = outputDirectory.resolve(base + ".ffmpeg.log");
+            errorLog = outputDirectory.resolve(base + ".ffmpeg.log");
             Path concatList = snapshot.sessionDirectory().resolve("segments.ffconcat");
             writeConcatList(concatList, snapshot.segments());
 
             ProcessBuilder builder = new ProcessBuilder(FFmpegCommand.buildReplayExport(
                     executable, format, concatList, partialFile));
             builder.redirectError(errorLog.toFile());
-            Process process = builder.start();
+            process = builder.start();
             int exitCode;
             if (!process.waitFor(60L, TimeUnit.SECONDS)) {
-                process.destroyForcibly();
+                terminate(process);
                 appendFailure(errorLog, "Replay export did not finish in time");
                 return new ExportResult(false, snapshot.sessionDirectory(),
                         "Replay export did not finish in time");
@@ -54,14 +59,46 @@ final class ReplayExporter {
             }
 
             moveCompletedFile(partialFile, finalFile);
-            Files.deleteIfExists(errorLog);
-            ReplayBufferEncoder.deleteOwnedSession(snapshot.sessionDirectory());
+            try {
+                Files.deleteIfExists(errorLog);
+            } catch (IOException exception) {
+                LOGGER.warn("Replay was saved, but its empty FFmpeg log could not be removed: {}",
+                        errorLog, exception);
+            }
+            try {
+                if (!ReplayBufferEncoder.deleteOwnedSession(snapshot.sessionDirectory())) {
+                    LOGGER.warn("Replay was saved, but its source buffer failed the ownership check and was preserved: {}",
+                            snapshot.sessionDirectory());
+                }
+            } catch (IOException exception) {
+                LOGGER.warn("Replay was saved, but its private source buffer could not be removed: {}",
+                        snapshot.sessionDirectory(), exception);
+            }
             return new ExportResult(true, finalFile, null);
         } catch (IOException | InterruptedException exception) {
+            terminate(process);
+            String message = safeMessage(exception);
+            appendFailure(errorLog, message);
             if (exception instanceof InterruptedException) {
                 Thread.currentThread().interrupt();
             }
-            return new ExportResult(false, snapshot.sessionDirectory(), safeMessage(exception));
+            return new ExportResult(false, snapshot.sessionDirectory(), message);
+        }
+    }
+
+    private static void terminate(Process process) {
+        if (process == null || !process.isAlive()) {
+            return;
+        }
+        process.destroy();
+        try {
+            if (!process.waitFor(2L, TimeUnit.SECONDS)) {
+                process.destroyForcibly();
+                process.waitFor(2L, TimeUnit.SECONDS);
+            }
+        } catch (InterruptedException exception) {
+            process.destroyForcibly();
+            Thread.currentThread().interrupt();
         }
     }
 
@@ -98,6 +135,9 @@ final class ReplayExporter {
     }
 
     private static void appendFailure(Path errorLog, String message) {
+        if (errorLog == null) {
+            return;
+        }
         try {
             Files.writeString(errorLog, System.lineSeparator() + "Observer Cam: " + message
                     + System.lineSeparator(), java.nio.file.StandardOpenOption.CREATE,

@@ -42,6 +42,7 @@ public final class ObserverFrameCapture {
     private static void handleImage(ObserverRecordingManager manager, long session, NativeImage image) {
         try (image) {
             if (image == null) {
+                manager.failCapture(Component.translatable("observercam.recording.error.capture"));
                 return;
             }
             int[] pixels = image.getPixelsABGR();

@@ -21,6 +21,9 @@ All notable user-facing changes to Observer Cam are recorded here.
 - Invalid client snapshots and corrupted local numeric settings are sanitized before use.
 - Config files are replaced atomically when the filesystem supports it.
 - PiP capture and texture cleanup are bounded and resilient across reset/disconnect paths.
+- FFmpeg/replay finalizers are time-bounded, terminate interrupted child processes, preserve diagnostics, and recover their UI state after unexpected errors.
+- Replay cleanup requires an exact private ownership marker and UUID session path, rejects symbolic-link substitutions, and never treats unrelated directories as deletion targets.
+- Disk-budget checks run twice per second with 128 MB of stop headroom so the configured recording cap remains conservative under encoder bursts.
 - Metadata now identifies the project owner, support links, and exact first-beta compatibility.
 
 ### Known limitations

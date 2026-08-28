@@ -198,6 +198,7 @@ public final class ObserverPictureInPicture {
     }
 
     private static void uploadFrame(Minecraft client, long generation, NativeImage image) {
+        boolean pixelsTransferred = false;
         try {
             if (generation != GENERATION.get() || !isEnabled() || client.level == null) {
                 image.close();
@@ -210,16 +211,29 @@ public final class ObserverPictureInPicture {
                 texture = new DynamicTexture(() -> "Observer Cam picture-in-picture",
                         image.getWidth(), image.getHeight(), false);
                 texture.setPixels(image);
+                pixelsTransferred = true;
                 textureWidth = image.getWidth();
                 textureHeight = image.getHeight();
                 client.getTextureManager().register(TEXTURE_ID, texture);
                 texture.upload();
             } else {
                 texture.setPixels(image);
+                pixelsTransferred = true;
                 texture.upload();
             }
         } catch (Throwable throwable) {
-            image.close();
+            if (!pixelsTransferred) {
+                try {
+                    image.close();
+                } catch (Throwable cleanupFailure) {
+                    throwable.addSuppressed(cleanupFailure);
+                }
+            }
+            try {
+                reset();
+            } catch (Throwable cleanupFailure) {
+                throwable.addSuppressed(cleanupFailure);
+            }
             LOGGER.error("Could not upload the Observer picture-in-picture frame", throwable);
         } finally {
             CAPTURE_IN_FLIGHT.set(false);

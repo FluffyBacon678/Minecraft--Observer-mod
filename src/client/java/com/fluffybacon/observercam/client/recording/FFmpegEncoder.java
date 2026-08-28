@@ -5,6 +5,8 @@ import com.fluffybacon.observercam.recording.RecordingAudio;
 import com.fluffybacon.observercam.recording.RecordingQuality;
 import com.fluffybacon.observercam.recording.RecordingResolution;
 import com.fluffybacon.observercam.recording.RecordingVideoFormat;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -22,6 +24,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 final class FFmpegEncoder {
+    private static final Logger LOGGER = LoggerFactory.getLogger("ObserverCam/Recorder");
     private static final int QUEUE_CAPACITY = 3;
     private static final byte[] END_OF_STREAM = new byte[0];
     private static final DateTimeFormatter FILE_STAMP = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss-SSS");
@@ -71,14 +74,32 @@ final class FFmpegEncoder {
         builder.redirectError(errorLog.toFile());
         try {
             process = builder.start();
-        } catch (IOException exception) {
-            Files.deleteIfExists(errorLog);
+            accepting.set(true);
+            writerThread = new Thread(this::writeFrames, "ObserverCam-FFmpeg-Writer");
+            writerThread.setDaemon(true);
+            writerThread.start();
+        } catch (IOException | RuntimeException exception) {
+            cleanupFailedStart(exception);
             throw exception;
         }
-        accepting.set(true);
-        writerThread = new Thread(this::writeFrames, "ObserverCam-FFmpeg-Writer");
-        writerThread.setDaemon(true);
-        writerThread.start();
+    }
+
+    private void cleanupFailedStart(Exception failure) {
+        accepting.set(false);
+        if (process != null && process.isAlive()) {
+            process.destroyForcibly();
+            try {
+                process.waitFor(2L, TimeUnit.SECONDS);
+            } catch (InterruptedException exception) {
+                Thread.currentThread().interrupt();
+                failure.addSuppressed(exception);
+            }
+        }
+        try {
+            Files.deleteIfExists(errorLog);
+        } catch (IOException exception) {
+            failure.addSuppressed(exception);
+        }
     }
 
     boolean submit(byte[] frame) {
@@ -103,11 +124,18 @@ final class FFmpegEncoder {
         if (successful) {
             try {
                 moveCompletedFile();
-                Files.deleteIfExists(errorLog);
-                return new RecordingResult(true, finalFile, null, acceptedFrames.get(),
-                        writtenFrames.get(), droppedFrames.get());
             } catch (IOException exception) {
                 failure = exception;
+            }
+            if (failure == null) {
+                try {
+                    Files.deleteIfExists(errorLog);
+                } catch (IOException exception) {
+                    LOGGER.warn("Recording was saved, but its empty FFmpeg log could not be removed: {}",
+                            errorLog, exception);
+                }
+                return new RecordingResult(true, finalFile, null, acceptedFrames.get(),
+                        writtenFrames.get(), droppedFrames.get());
             }
         }
 

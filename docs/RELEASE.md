@@ -44,7 +44,7 @@ Modrinth's current policies require disclosure of significant AI-assisted conten
 | Date | Build / SHA-256 | Environment | Result | Notes |
 | --- | --- | --- | --- | --- |
 | 2026-08-27 | `ed27daa` / `62567B1E…` | Local Minecraft 1.21.11 modpack | Partial pass | Core Observer movement and PiP were user-tested; this predates the beta metadata/hardening pass. |
-| 2026-08-28 | `0.1.0-beta.1+mc1.21.11` / `75153EC8…` | Java 21 clean build | Automated pass | 59 tests passed with no compile warnings; packaged metadata, license, icon, and jar contents inspected. Manual matrix remains open. |
+| 2026-08-28 | `0.1.0-beta.1+mc1.21.11` / `A484C5E5…` | Java 21 clean safety build | Automated pass | 59 tests passed with no compile warnings; finalizer, process, replay-ownership, PiP, and disk-cap error paths were hardened. Manual matrix remains open. |
 |  |  |  |  |  |
 
 ## Post-beta work, not a first-release blocker
