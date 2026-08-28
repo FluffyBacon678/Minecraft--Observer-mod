@@ -3,7 +3,9 @@ package com.fluffybacon.observercam.recording;
 public enum RecordingResolution {
     CURRENT("current", 0, 0),
     HD_720("720p", 1280, 720),
-    FULL_HD_1080("1080p", 1920, 1080);
+    FULL_HD_1080("1080p", 1920, 1080),
+    QHD_1440("1440p", 2560, 1440),
+    UHD_2160("2160p", 3840, 2160);
 
     private final String id;
     private final int width;

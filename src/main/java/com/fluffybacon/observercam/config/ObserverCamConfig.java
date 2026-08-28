@@ -225,8 +225,8 @@ public final class ObserverCamConfig {
         preferredPlayerScreenSize = clamp(finiteOr(preferredPlayerScreenSize, 0.34), 0.15, 0.65);
         movementPredictionTicks = clamp(finiteOr(movementPredictionTicks, 5.0), 0.0, 12.0);
         recordingStorageLimitGb = clamp(finiteOr(recordingStorageLimitGb, 3.0), 0.5, 100.0);
-        recordingFrameRate = Math.max(15, Math.min(60, recordingFrameRate));
-        pictureInPictureFrameRate = Math.max(2, Math.min(15, pictureInPictureFrameRate));
+        recordingFrameRate = Math.max(15, Math.min(120, recordingFrameRate));
+        pictureInPictureFrameRate = Math.max(2, Math.min(60, pictureInPictureFrameRate));
         instantReplayDurationMinutes = clamp(finiteOr(instantReplayDurationMinutes, 2.0), 0.5, 30.0);
         instantReplayStorageLimitGb = clamp(finiteOr(instantReplayStorageLimitGb, 1.0),
                 0.25, recordingStorageLimitGb);

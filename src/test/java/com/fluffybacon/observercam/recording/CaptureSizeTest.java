@@ -15,6 +15,8 @@ class CaptureSizeTest {
     void recordingResolutionControlsTheRealCaptureSurface() {
         assertEquals(new CaptureSize(1280, 720), RecordingResolution.HD_720.captureSize(3840, 2160));
         assertEquals(new CaptureSize(1920, 1080), RecordingResolution.FULL_HD_1080.captureSize(1280, 720));
+        assertEquals(new CaptureSize(2560, 1440), RecordingResolution.QHD_1440.captureSize(3840, 2160));
+        assertEquals(new CaptureSize(3840, 2160), RecordingResolution.UHD_2160.captureSize(1920, 1080));
         assertEquals(new CaptureSize(1918, 1078), RecordingResolution.CURRENT.captureSize(1919, 1079));
     }
 
@@ -24,5 +26,7 @@ class CaptureSizeTest {
                 PictureInPictureResolution.PERFORMANCE.captureSize(3840, 2160));
         assertEquals(new CaptureSize(640, 360),
                 PictureInPictureResolution.SHARP.captureSize(3840, 2160));
+        assertEquals(new CaptureSize(1280, 720),
+                PictureInPictureResolution.ULTRA.captureSize(3840, 2160));
     }
 }

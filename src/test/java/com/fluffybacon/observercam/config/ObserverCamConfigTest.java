@@ -103,4 +103,16 @@ class ObserverCamConfigTest {
         assertEquals(InstantReplayLimitMode.TIME, InstantReplayLimitMode.SIZE.next());
         assertEquals(PictureInPictureResolution.BALANCED, PictureInPictureResolution.PERFORMANCE.next());
     }
+
+    @Test
+    void highEndFrameRatesRemainOptionalButBounded() {
+        ObserverCamConfig config = new ObserverCamConfig();
+        config.recordingFrameRate = 500;
+        config.pictureInPictureFrameRate = 500;
+
+        config.cameraSettings();
+
+        assertEquals(120, config.recordingFrameRate);
+        assertEquals(60, config.pictureInPictureFrameRate);
+    }
 }

@@ -3,7 +3,8 @@ package com.fluffybacon.observercam.recording;
 public enum PictureInPictureResolution {
     PERFORMANCE("performance", 320, 180),
     BALANCED("balanced", 480, 270),
-    SHARP("sharp", 640, 360);
+    SHARP("sharp", 640, 360),
+    ULTRA("ultra", 1280, 720);
 
     private final String id;
     private final int maximumWidth;

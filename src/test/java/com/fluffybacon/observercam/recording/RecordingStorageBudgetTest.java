@@ -23,14 +23,38 @@ class RecordingStorageBudgetTest {
     }
 
     @Test
-    void existingFilesReduceRemainingBudget() throws IOException {
+    void ownedRecordingsReduceRemainingBudget() throws IOException {
         ObserverCamConfig.get().recordingStorageLimitGb = 3.0;
-        Files.write(temporaryDirectory.resolve("one.part"), new byte[4]);
-        Files.createDirectories(temporaryDirectory.resolve("nested"));
-        Files.write(temporaryDirectory.resolve("nested/two.part"), new byte[6]);
+        Files.write(temporaryDirectory.resolve("observercam_2026-08-28_19-00-00-000.mp4"), new byte[4]);
+        Files.write(temporaryDirectory.resolve("observercam_replay_2026-08-28_19-00-00-001.partial.mkv"),
+                new byte[6]);
 
         assertEquals(10L, RecordingStorageBudget.usedBytes(temporaryDirectory));
         assertEquals(2_999_999_990L, RecordingStorageBudget.remainingBytes(temporaryDirectory));
+    }
+
+    @Test
+    void unrelatedCaptureFilesNeverConsumeTheObserverCamBudget() throws IOException {
+        ObserverCamConfig.get().recordingStorageLimitGb = 3.0;
+        Files.write(temporaryDirectory.resolve("War Thunder 2026-08-12.mp4"), new byte[20]);
+        Files.write(temporaryDirectory.resolve("observercam_notes.txt"), new byte[10]);
+        Path nested = Files.createDirectories(temporaryDirectory.resolve("another-recorder"));
+        Files.write(nested.resolve("observercam_2026-08-28_19-00-00-000.mp4"), new byte[30]);
+
+        assertEquals(0L, RecordingStorageBudget.usedBytes(temporaryDirectory));
+        assertEquals(3_000_000_000L, RecordingStorageBudget.remainingBytes(temporaryDirectory));
+    }
+
+    @Test
+    void ownedReplayBufferConsumesTheSharedBudget() throws IOException {
+        ObserverCamConfig.get().recordingStorageLimitGb = 3.0;
+        Path root = Files.createDirectories(ReplayBufferFiles.root(temporaryDirectory));
+        Path session = Files.createDirectories(root.resolve("session-01234567-89ab-cdef-0123-456789abcdef"));
+        Files.writeString(ReplayBufferFiles.marker(session), ReplayBufferFiles.OWNER_MARKER_CONTENT);
+        Files.write(session.resolve("segment-00000000.ts"), new byte[25]);
+
+        long markerBytes = ReplayBufferFiles.OWNER_MARKER_CONTENT.getBytes(java.nio.charset.StandardCharsets.UTF_8).length;
+        assertEquals(markerBytes + 25L, RecordingStorageBudget.usedBytes(temporaryDirectory));
     }
 
     @Test

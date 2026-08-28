@@ -27,6 +27,7 @@ public final class ObserverCamConfigScreen extends Screen {
     private Button povButton;
     private Button recordingButton;
     private Button pictureInPictureButton;
+    private Button outputDirectoryButton;
 
     public ObserverCamConfigScreen(Screen parent) {
         super(Component.translatable("observercam.config.title"));
@@ -68,17 +69,26 @@ public final class ObserverCamConfigScreen extends Screen {
                 .bounds(x + 152, 70, 148, 20)
                 .build());
 
+        outputDirectoryButton = addRenderableWidget(Button.builder(outputDirectoryText(), button ->
+                        RecordingDirectoryPicker.choose(() -> {
+                            button.setMessage(outputDirectoryText());
+                            button.setTooltip(outputDirectoryTooltip());
+                        }))
+                .tooltip(outputDirectoryTooltip())
+                .bounds(x, 94, CONTENT_WIDTH, 20)
+                .build());
+
         Category[] categories = Category.values();
         for (int index = 0; index < categories.length; index++) {
             Category category = categories[index];
             int categoryX = x + (index % 2) * 152;
-            int categoryY = 98 + (index / 2) * 24;
+            int categoryY = 118 + (index / 2) * 24;
             addRenderableWidget(Button.builder(category.title(), button -> minecraft.setScreen(new CategoryScreen(this, category)))
                     .tooltip(Tooltip.create(category.description()))
                     .bounds(categoryX, categoryY, 148, 20)
                     .build());
         }
-        int actionY = 106 + ((categories.length + 1) / 2) * 24;
+        int actionY = Math.min(height - 30, 126 + ((categories.length + 1) / 2) * 24);
         addRenderableWidget(Button.builder(Component.translatable("observercam.config.reset"), button -> confirmReset())
                 .tooltip(Tooltip.create(Component.translatable("observercam.config.reset.tooltip")))
                 .bounds(x, actionY, 148, 20)
@@ -114,6 +124,33 @@ public final class ObserverCamConfigScreen extends Screen {
     private static Component pictureInPictureText() {
         return Component.translatable(ObserverPictureInPicture.isEnabled()
                 ? "observercam.config.pip.hide" : "observercam.config.pip.show");
+    }
+
+    private Component outputDirectoryText() {
+        Component label = Component.translatable("observercam.config.setting.recording_output_directory");
+        String path = ObserverCamConfig.get().recordingOutputPath().toString();
+        int availableWidth = CONTENT_WIDTH - 18 - font.width(label) - font.width(": ");
+        return Component.translatable("observercam.config.value", label,
+                Component.literal(shortenMiddle(path, availableWidth)));
+    }
+
+    private Tooltip outputDirectoryTooltip() {
+        return Tooltip.create(Component.translatable(
+                        "observercam.config.setting.recording_output_directory.tooltip")
+                .copy().append("\n").append(ObserverCamConfig.get().recordingOutputPath().toString()));
+    }
+
+    private String shortenMiddle(String value, int maximumWidth) {
+        if (maximumWidth <= font.width("…") || font.width(value) <= maximumWidth) {
+            return value;
+        }
+        int leftLength = Math.min(3, value.length());
+        String left = value.substring(0, leftLength);
+        String right = value.substring(leftLength);
+        while (!right.isEmpty() && font.width(left + "…" + right) > maximumWidth) {
+            right = right.substring(1);
+        }
+        return left + "…" + right;
     }
 
     private void confirmReset() {
@@ -169,10 +206,10 @@ public final class ObserverCamConfigScreen extends Screen {
     private enum Category {
         CAMERA("camera"),
         MOVEMENT("movement"),
-        CINEMATOGRAPHY("cinematography"),
-        BEHAVIOR("behavior"),
+        DIRECTOR("director"),
         RECORDING("recording"),
         VIDEO("video"),
+        PICTURE_IN_PICTURE("picture_in_picture"),
         REPLAY("replay"),
         DEBUG("debug");
 
@@ -223,15 +260,13 @@ public final class ObserverCamConfigScreen extends Screen {
                         number("emergency_distance", "blocks", 10, 96, 1, () -> c.emergencyTeleportDistance,
                                 v -> c.emergencyTeleportDistance = Math.max(v, c.catchUpDistance + 2.0))
                 );
-                case CINEMATOGRAPHY -> List.of(
+                case DIRECTOR -> List.of(
                         number("background_importance", "none", 0, 1.5, 2, () -> c.backgroundImportance, v -> c.backgroundImportance = v),
                         number("player_visibility", "none", 0.5, 2, 2, () -> c.playerVisibilityImportance, v -> c.playerVisibilityImportance = v),
                         number("shot_stability", "none", 0, 1, 2, () -> c.shotStability, v -> c.shotStability = v),
                         number("reframe_threshold", "score", 20, 90, 0, () -> c.reframeThreshold, v -> c.reframeThreshold = v),
                         number("player_screen_size", "percent", 0.15, 0.65, 0, 100, () -> c.preferredPlayerScreenSize, v -> c.preferredPlayerScreenSize = v),
-                        number("prediction_ticks", "ticks", 0, 12, 1, () -> c.movementPredictionTicks, v -> c.movementPredictionTicks = v)
-                );
-                case BEHAVIOR -> List.of(
+                        number("prediction_ticks", "ticks", 0, 12, 1, () -> c.movementPredictionTicks, v -> c.movementPredictionTicks = v),
                         bool("cameraman_enabled", () -> c.cameramanEnabled, ObserverCamClient::setCameramanEnabled),
                         bool("follow_automatically", () -> c.followTargetAutomatically, v -> c.followTargetAutomatically = v),
                         bool("allow_front_shots", () -> c.allowFrontFacingShots, v -> c.allowFrontFacingShots = v)
@@ -239,16 +274,16 @@ public final class ObserverCamConfigScreen extends Screen {
                 case RECORDING -> List.of(
                         directory("recording_output_directory"),
                         action("open_recording_folder", RecordingFolderActions::open),
-                        file("recording_ffmpeg", () -> c.recordingFfmpegPath, FFmpegExecutablePicker::choose),
-                        bool("recording_audio_enabled", () -> c.recordingAudioEnabled,
-                                v -> c.recordingAudioEnabled = v),
-                        audioDevice("recording_audio_device"),
                         number("recording_storage_limit", "gigabytes", 0.5, 100, 1,
                                 () -> c.recordingStorageLimitGb,
                                 v -> {
                                     c.recordingStorageLimitGb = v;
                                     c.instantReplayStorageLimitGb = Math.min(c.instantReplayStorageLimitGb, v);
-                                })
+                                }),
+                        file("recording_ffmpeg", () -> c.recordingFfmpegPath, FFmpegExecutablePicker::choose),
+                        bool("recording_audio_enabled", () -> c.recordingAudioEnabled,
+                                v -> c.recordingAudioEnabled = v),
+                        audioDevice("recording_audio_device")
                 );
                 case VIDEO -> List.of(
                         choice("recording_video_format",
@@ -260,16 +295,18 @@ public final class ObserverCamConfigScreen extends Screen {
                         choice("recording_quality",
                                 () -> Component.translatable("observercam.config.quality." + c.recordingQuality.id()),
                                 () -> c.recordingQuality = c.recordingQuality.next(), false),
-                        number("recording_frame_rate", "frames_per_second", 15, 60, 0,
+                        number("recording_frame_rate", "frames_per_second", 15, 120, 0,
                                 () -> c.recordingFrameRate, v -> c.recordingFrameRate = (int) Math.round(v)),
-                        bool("recording_include_hud", () -> c.recordingIncludeHud, v -> c.recordingIncludeHud = v),
+                        bool("recording_include_hud", () -> c.recordingIncludeHud, v -> c.recordingIncludeHud = v)
+                );
+                case PICTURE_IN_PICTURE -> List.of(
                         bool("picture_in_picture_enabled", () -> c.pictureInPictureEnabled,
                                 ObserverPictureInPicture::setEnabled),
                         choice("picture_in_picture_resolution",
                                 () -> Component.translatable("observercam.config.pip_resolution."
                                         + c.pictureInPictureResolution.id()),
                                 () -> c.pictureInPictureResolution = c.pictureInPictureResolution.next(), false),
-                        number("picture_in_picture_frame_rate", "frames_per_second", 2, 15, 0,
+                        number("picture_in_picture_frame_rate", "frames_per_second", 2, 60, 0,
                                 () -> c.pictureInPictureFrameRate,
                                 v -> c.pictureInPictureFrameRate = (int) Math.round(v))
                 );
@@ -385,14 +422,23 @@ public final class ObserverCamConfigScreen extends Screen {
 
         @Override
         protected void init() {
-            int x = width / 2 - CONTENT_WIDTH / 2;
-            int y = 43;
             List<Setting> settings = category.settings();
-            int step = settings.size() <= 1 ? 24
-                    : Math.min(24, Math.max(20, (height - 57 - y) / (settings.size() - 1)));
-            for (Setting setting : settings) {
+            boolean twoColumns = settings.size() > 7 && width >= 500;
+            int rows = twoColumns ? (settings.size() + 1) / 2 : settings.size();
+            int widgetWidth = twoColumns ? 224 : CONTENT_WIDTH;
+            int totalWidth = twoColumns ? widgetWidth * 2 + 4 : widgetWidth;
+            int startX = width / 2 - totalWidth / 2;
+            int startY = 43;
+            int step = rows <= 1 ? 24
+                    : Math.min(24, Math.max(20, (height - 57 - startY) / (rows - 1)));
+            for (int index = 0; index < settings.size(); index++) {
+                Setting setting = settings.get(index);
+                int column = twoColumns ? index / rows : 0;
+                int row = twoColumns ? index % rows : index;
+                int x = startX + column * (widgetWidth + 4);
+                int y = startY + row * step;
                 if (setting instanceof NumberSetting number) {
-                    addRenderableWidget(new ValueSlider(x, y, CONTENT_WIDTH, number));
+                    addRenderableWidget(new ValueSlider(x, y, widgetWidth, number));
                 } else if (setting instanceof BooleanSetting bool) {
                     Button toggle = Button.builder(toggleText(bool), button -> {
                                 bool.setter.accept(!bool.getter.getAsBoolean());
@@ -400,7 +446,7 @@ public final class ObserverCamConfigScreen extends Screen {
                                 ObserverCamClient.syncCameraSettings();
                             })
                             .tooltip(Tooltip.create(bool.tooltip()))
-                            .bounds(x, y, CONTENT_WIDTH, 20)
+                            .bounds(x, y, widgetWidth, 20)
                             .build();
                     addRenderableWidget(toggle);
                 } else if (setting instanceof DirectorySetting directory) {
@@ -410,7 +456,7 @@ public final class ObserverCamConfigScreen extends Screen {
                                     button.setTooltip(directoryTooltip(directory));
                                 }))
                             .tooltip(directoryTooltip(directory))
-                            .bounds(x, y, CONTENT_WIDTH, 20)
+                            .bounds(x, y, widgetWidth, 20)
                             .build();
                     addRenderableWidget(browse);
                 } else if (setting instanceof FileSetting file) {
@@ -419,7 +465,7 @@ public final class ObserverCamConfigScreen extends Screen {
                                 button.setTooltip(fileTooltip(file));
                             }))
                             .tooltip(fileTooltip(file))
-                            .bounds(x, y, CONTENT_WIDTH, 20)
+                            .bounds(x, y, widgetWidth, 20)
                             .build();
                     addRenderableWidget(browse);
                 } else if (setting instanceof AudioDeviceSetting audio) {
@@ -430,7 +476,7 @@ public final class ObserverCamConfigScreen extends Screen {
                                         rebuildWidgets();
                                     }))
                             .tooltip(audioDeviceTooltip(audio))
-                            .bounds(x, y, CONTENT_WIDTH, 20)
+                            .bounds(x, y, widgetWidth, 20)
                             .build();
                     addRenderableWidget(choose);
                 } else if (setting instanceof ChoiceSetting choice) {
@@ -444,16 +490,15 @@ public final class ObserverCamConfigScreen extends Screen {
                                 }
                             })
                             .tooltip(Tooltip.create(choice.tooltip()))
-                            .bounds(x, y, CONTENT_WIDTH, 20)
+                            .bounds(x, y, widgetWidth, 20)
                             .build();
                     addRenderableWidget(choiceButton);
                 } else if (setting instanceof ActionSetting action) {
                     addRenderableWidget(Button.builder(action.label(), button -> action.action.run())
                             .tooltip(Tooltip.create(action.tooltip()))
-                            .bounds(x, y, CONTENT_WIDTH, 20)
+                            .bounds(x, y, widgetWidth, 20)
                             .build());
                 }
-                y += step;
             }
             addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, button -> onClose())
                     .bounds(width / 2 - 75, height - 30, 150, 20)
@@ -464,12 +509,24 @@ public final class ObserverCamConfigScreen extends Screen {
             return ObserverCamConfigScreen.toggleText(setting);
         }
 
-        private static Component directoryText(DirectorySetting setting) {
+        private Component directoryText(DirectorySetting setting) {
             var outputPath = ObserverCamConfig.get().recordingOutputPath();
-            var fileName = outputPath.getFileName();
-            String displayName = fileName == null ? outputPath.toString() : fileName.toString();
+            String displayName = outputPath.toString();
             return Component.translatable("observercam.config.value", setting.label(),
-                    Component.literal(displayName));
+                    Component.literal(shortenMiddle(displayName, CONTENT_WIDTH - 130)));
+        }
+
+        private String shortenMiddle(String value, int maximumWidth) {
+            if (maximumWidth <= font.width("…") || font.width(value) <= maximumWidth) {
+                return value;
+            }
+            int leftLength = Math.min(3, value.length());
+            String left = value.substring(0, leftLength);
+            String right = value.substring(leftLength);
+            while (!right.isEmpty() && font.width(left + "…" + right) > maximumWidth) {
+                right = right.substring(1);
+            }
+            return left + "…" + right;
         }
 
         private static Tooltip directoryTooltip(DirectorySetting setting) {

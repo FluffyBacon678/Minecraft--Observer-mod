@@ -197,7 +197,7 @@ public final class ObserverPictureInPicture {
         graphics.blit(TEXTURE_ID,
                 x + 2, y + headerHeight + 2,
                 x + displayWidth + 2, y + displayHeight + headerHeight + 2,
-                0.0F, 1.0F, 0.0F, 1.0F);
+                0.0F, 1.0F, 1.0F, 0.0F);
     }
 
     public static void reset() {
