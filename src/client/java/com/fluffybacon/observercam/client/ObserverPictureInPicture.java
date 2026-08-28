@@ -42,8 +42,12 @@ public final class ObserverPictureInPicture {
 
     public static void setEnabled(boolean enabled) {
         ObserverCamConfig config = ObserverCamConfig.get();
+        boolean activating = enabled && !config.pictureInPictureEnabled;
         config.pictureInPictureEnabled = enabled;
         config.save();
+        if (activating) {
+            ObserverActivationPulse.pulse();
+        }
         if (!enabled) {
             reset();
         }

@@ -37,27 +37,27 @@ public final class ObserverCamClient implements ClientModInitializer {
         cameramanKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
                 "key.observercam.toggle_cameraman", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_UNKNOWN, category));
         KeyMapping viewKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
-                "key.observercam.toggle_view", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_O, category));
+                "key.observercam.toggle_view", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_UNKNOWN, category));
         recordKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
                 "key.observercam.toggle_recording", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_UNKNOWN, category));
         KeyMapping pictureInPictureKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
                 "key.observercam.toggle_pip", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_UNKNOWN, category));
         KeyMapping saveReplayKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
-                "key.observercam.save_replay", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_F9, category));
+                "key.observercam.save_replay", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_UNKNOWN, category));
 
         ClientPlayNetworking.registerGlobalReceiver(ToggleViewPayload.TYPE, (payload, context) -> POV.toggle(context.client()));
         ClientPlayNetworking.registerGlobalReceiver(RestoreViewPayload.TYPE, (payload, context) -> POV.restore(context.client()));
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
             syncCameraSettings();
             sendCameramanEnabled(ObserverCamConfig.get().cameramanEnabled);
-            ObserverRecordingState.sync();
+            ObserverActivationPulse.sync();
         });
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
             ObserverRecordingManager.get().stop(client,
                     net.minecraft.network.chat.Component.translatable("observercam.recording.stop.disconnect"));
             ObserverRecordingManager.get().discardInstantReplay(client);
             POV.disconnect(client);
-            ObserverRecordingState.reset();
+            ObserverActivationPulse.reset();
             ObserverPictureInPicture.reset();
             ObserverAssistant.reset();
         });

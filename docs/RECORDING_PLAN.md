@@ -21,7 +21,7 @@ Primary references:
 - The existing disk budget defaults to 3 GB and remains configurable from 0.5–100 GB.
 - Video format is selectable now: MP4/H.264 (default and widest compatibility), MKV/H.264 (safer recovery), or WebM/VP9 (open web format).
 - Instant replay is explicitly **off by default**. Its time-bounded or size-bounded rolling history is implemented in Phase 2A below.
-- A synchronized recording-state signal drives the redstone-red Observer eye while recording.
+- A synchronized activation signal briefly drives the vanilla Observer powered model for one redstone tick; there is no permanent custom eye glow.
 
 ## Phase 1 — narrow video-only MVP (implemented)
 
@@ -33,7 +33,7 @@ Primary references:
 6. Fixed-rate raw frames are piped to a user-selected or PATH-resolved FFmpeg executable. MP4 and MKV use H.264 with `yuv420p`; WebM uses VP9. The command is assembled from fixed safe options rather than arbitrary user arguments.
 7. Output uses unique, container-matched partial names, is moved to its final name on clean stop, and retains a readable FFmpeg log only on failure.
 8. Free disk space and the configured Observer Cam storage budget are checked before and during recording. Recording stops before the cap and never deletes unrelated files.
-9. A compact indicator shows recording/finalization state, elapsed time, estimated bytes, and dropped frames. The Observer's eye glows redstone red while capture is active.
+9. A compact indicator shows recording/finalization state, elapsed time, estimated bytes, and dropped frames. Capture startup pulses the Observer's vanilla rear red output dot for two game ticks.
 
 Phase 1 deliberately excludes replay timelines, camera editing, 4K supersampling, 360-degree rendering, and bundled FFmpeg downloads.
 
@@ -43,7 +43,7 @@ Phase 1 deliberately excludes replay timelines, camera editing, 4K supersampling
 - FFmpeg writes two-second independently finalized, keyframe-aligned segments into an Observer Cam-owned `.observercam-replay-buffer` directory.
 - Exactly one selected retention rule applies: elapsed time or combined buffer size. The global 3 GB recording cap and free-disk reserve always remain absolute ceilings.
 - Eviction selects only the oldest complete segments. The active segment, completed exports, unrelated files, unmarked directories, and another location's data are never deletion targets.
-- `F9` and **Save recent footage** close the active segment, concatenate the retained sequence without re-encoding, save it in the selected MP4/MKV/WebM format, remove the successful private buffer, and resume automatically.
+- **Save recent footage** and its optional unbound-by-default shortcut close the active segment, concatenate the retained sequence without re-encoding, save it in the selected MP4/MKV/WebM format, remove the successful private buffer, and resume automatically.
 - A normal recording temporarily replaces the replay encoder rather than running two encoders at once. Replay buffering resumes after the normal video finalizes.
 - Disconnect, POV exit, disabling the setting, and shutdown discard unsaved private buffer data. A failed export retains its marked session and diagnostics until the next clean buffer startup.
 

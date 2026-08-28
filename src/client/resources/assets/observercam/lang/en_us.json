@@ -126,7 +126,7 @@
   "observercam.config.setting.recording_include_hud": "Include HUD and menus",
   "observercam.config.setting.recording_include_hud.tooltip": "Applies while viewing Observer POV. Background Observer recordings stay clean so your normal player HUD is never mixed into them.",
   "observercam.config.setting.picture_in_picture_enabled": "Observer picture-in-picture",
-  "observercam.config.setting.picture_in_picture_enabled.tooltip": "A bounded live Observer preview, similar to an upgraded paper doll. It hides automatically while full Observer POV is active or the HUD is hidden. The local Observer's red eyes light while PiP is active.",
+  "observercam.config.setting.picture_in_picture_enabled.tooltip": "A bounded live Observer preview, similar to an upgraded paper doll. It hides automatically while full Observer POV is active or the HUD is hidden. Switching it on briefly pulses the Observer's vanilla rear red output dot.",
   "observercam.config.setting.picture_in_picture_resolution": "PiP render resolution",
   "observercam.config.setting.picture_in_picture_resolution.tooltip": "Controls the actual secondary world-render size. Balanced is recommended; Ultra is optional and much more demanding.",
   "observercam.config.pip_resolution.performance": "Performance (320×180)",
@@ -251,7 +251,7 @@
   "observercam.assistant.fact.8": "Wide camera shots reveal more of the environment and make movement easier to follow.",
   "observercam.assistant.fact.9": "Leaving space in front of a moving subject is called lead room.",
   "observercam.assistant.fact.10": "A stable, slightly imperfect composition often looks better than a camera that constantly corrects itself.",
-  "observercam.assistant.fact.11": "My red eyes mean that recording, instant replay, or your live PiP preview is active.",
+  "observercam.assistant.fact.11": "My rear red dot pulses for one redstone tick when recording, instant replay, or PiP starts.",
 
   "observercam.message.cameraman.enabled": "Observer cameraman enabled.",
   "observercam.message.cameraman.disabled": "Observer cameraman disabled.",

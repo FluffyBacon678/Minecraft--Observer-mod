@@ -27,7 +27,7 @@ The next useful step is a real gameplay pass with the freshly built jar. Begin w
 - Clicking **FFmpeg executable** can select `ffmpeg.exe`; cancelling preserves the previous choice.
 - **Record audio** is Off after Reset Defaults. Clicking **Audio source** lists only Windows game-audio loopback inputs; if none exists, it explains that recording stays video-only and never offers a microphone as a substitute.
 - **Open video folder** creates and opens the resolved output directory.
-- **Instant Replay** is Off after Reset Defaults, offers Time or Size retention, and exposes **Save recent footage** without hiding the `F9` binding.
+- **Instant Replay** is Off after Reset Defaults, offers Time or Size retention, and exposes **Save recent footage** even when its shortcut is unbound.
 - **Observer picture-in-picture** is Off after Reset Defaults. Its recording and PiP controls are unbound by default and therefore cannot replace an existing key; both remain usable from Mod Menu.
 
 ## Assistant checks
@@ -51,7 +51,7 @@ The next useful step is a real gameplay pass with the freshly built jar. Begin w
 ## Recording checks
 
 1. Bind **Start/stop Observer recording** under Observer Cam controls or use the Mod Menu button. From normal player view, start recording, wait for **Observer recording LIVE**, record normal movement for 20 seconds, then stop. Wait for the saved message before closing Minecraft.
-2. Confirm the Observer eye glows red while recording, the compact REC indicator advances, and the resulting video has the expected duration, view, and smooth playback.
+2. Confirm recording startup produces one brief vanilla-style red pulse on the Observer's rear output dot, the compact REC indicator advances, and the resulting video has the expected duration, view, and smooth playback. The front eyes must not glow and the rear dot must not remain powered.
 3. Repeat with **Include HUD** enabled and confirm HUD/chat inclusion changes without changing the Observer view.
 4. Repeat once with MKV and once with WebM; confirm every clean stop produces the selected extension and no `.partial` file or FFmpeg log remains.
 5. Repeat with 720p and 1080p. Confirm the files report exactly 1280×720 and 1920×1080, with no stretched image when the game window is not 16:9. Test 1440p or 4K only as an explicit high-end performance pass.
@@ -65,9 +65,9 @@ If a recording fails, keep the `.partial` file and matching `.ffmpeg.log`; those
 
 ## Instant replay checks
 
-1. Leave **Instant replay buffer** Off, enter Observer POV, and confirm no REPLAY indicator appears and `F9` explains that the feature is disabled.
-2. Enable it with the Time limit at 0.5 minutes. In normal player view, confirm the red eye and REPLAY indicator appear automatically while the Observer feed buffers in the background.
-3. Film for at least 45 seconds, press `F9`, wait for **Instant replay saved**, and confirm the output contains approximately the latest 30 seconds rather than the full 45 seconds.
+1. Leave **Instant replay buffer** Off, enter Observer POV, and confirm no REPLAY indicator appears; **Save recent footage** should explain that the feature is disabled.
+2. Enable it with the Time limit at 0.5 minutes. In normal player view, confirm one brief rear output-dot pulse and the REPLAY indicator appear while the Observer feed buffers in the background.
+3. Film for at least 45 seconds, use **Save recent footage** or an assigned shortcut, wait for **Instant replay saved**, and confirm the output contains approximately the latest 30 seconds rather than the full 45 seconds.
 4. Keep playing after the save and confirm buffering resumes automatically. Save again and verify the second file contains only footage recorded after buffering resumed.
 5. Select the Size limit, choose the minimum cap, and confirm old segments disappear while the indicator remains active and the global recording folder cap is never crossed.
 6. Start a normal recording from Mod Menu or your assigned key while replay is buffering. The replay indicator should pause, the normal REC indicator should take over, and replay should resume after the normal video is saved.

@@ -29,7 +29,7 @@ public final class ObserverCameraEntity extends Entity {
     private static final EntityDataAccessor<Integer> VISIBILITY = SynchedEntityData.defineId(ObserverCameraEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Float> INDOOR = SynchedEntityData.defineId(ObserverCameraEntity.class, EntityDataSerializers.FLOAT);
     private static final EntityDataAccessor<Integer> CANDIDATE_COUNT = SynchedEntityData.defineId(ObserverCameraEntity.class, EntityDataSerializers.INT);
-    private static final EntityDataAccessor<Boolean> RECORDING = SynchedEntityData.defineId(ObserverCameraEntity.class, EntityDataSerializers.BOOLEAN);
+    private static final EntityDataAccessor<Integer> POWERED_TICKS = SynchedEntityData.defineId(ObserverCameraEntity.class, EntityDataSerializers.INT);
 
     private final CameraDirector director = new CameraDirector();
     private int missingTargetTicks;
@@ -51,7 +51,7 @@ public final class ObserverCameraEntity extends Entity {
         builder.define(VISIBILITY, 0);
         builder.define(INDOOR, 0.0F);
         builder.define(CANDIDATE_COUNT, 0);
-        builder.define(RECORDING, false);
+        builder.define(POWERED_TICKS, 0);
     }
 
     @Override
@@ -59,6 +59,9 @@ public final class ObserverCameraEntity extends Entity {
         super.tick();
         this.setNoGravity(true);
         this.setInvulnerable(true);
+        if (!level().isClientSide() && poweredTicks() > 0) {
+            entityData.set(POWERED_TICKS, ObserverPulseTiming.advance(poweredTicks()));
+        }
         if (level().isClientSide() || !isFollowing()) {
             setDeltaMovement(Vec3.ZERO);
             return;
@@ -93,7 +96,9 @@ public final class ObserverCameraEntity extends Entity {
         replacement.setOwner(ownerUuid != null ? ownerUuid : target.getUUID());
         replacement.setTarget(target);
         replacement.setFollowing(isFollowing());
-        replacement.setRecording(isRecording());
+        if (isPowered()) {
+            replacement.pulse();
+        }
         Vec3 destination = target.position().add(0.0, 2.0, 0.0).subtract(target.getLookAngle().scale(8.0));
         replacement.snapTo(destination);
         targetLevel.addFreshEntity(replacement);
@@ -177,12 +182,16 @@ public final class ObserverCameraEntity extends Entity {
         }
     }
 
-    public boolean isRecording() {
-        return entityData.get(RECORDING);
+    public boolean isPowered() {
+        return ObserverPulseTiming.isPowered(poweredTicks());
     }
 
-    public void setRecording(boolean recording) {
-        entityData.set(RECORDING, recording);
+    public void pulse() {
+        entityData.set(POWERED_TICKS, ObserverPulseTiming.start());
+    }
+
+    private int poweredTicks() {
+        return Math.max(0, entityData.get(POWERED_TICKS));
     }
 
     public CameraState cameraState() {

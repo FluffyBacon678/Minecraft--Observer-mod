@@ -2,7 +2,7 @@ package com.fluffybacon.observercam.client.recording;
 
 import com.fluffybacon.observercam.client.ObserverCamClient;
 import com.fluffybacon.observercam.client.ObserverPovController;
-import com.fluffybacon.observercam.client.ObserverRecordingState;
+import com.fluffybacon.observercam.client.ObserverActivationPulse;
 import com.fluffybacon.observercam.config.ObserverCamConfig;
 import com.fluffybacon.observercam.recording.CaptureSize;
 import com.fluffybacon.observercam.recording.InstantReplayLimitMode;
@@ -325,7 +325,7 @@ public final class ObserverRecordingManager {
         } else {
             joinFinalizer(replayFinalizerThread, REPLAY_FINALIZER_SHUTDOWN_SECONDS, "instant replay");
         }
-        ObserverRecordingState.setActive(false);
+        ObserverActivationPulse.setCaptureActive(false);
     }
 
     public long elapsedNanos() {
@@ -751,7 +751,7 @@ public final class ObserverRecordingManager {
     }
 
     private void updateObserverLight() {
-        ObserverRecordingState.setActive(isRecording() || isReplayBuffering());
+        ObserverActivationPulse.setCaptureActive(isRecording() || isReplayBuffering());
     }
 
     private static void joinFinalizer(Thread thread, long seconds, String description) {

@@ -31,6 +31,8 @@ Run these against the exact jar intended for release and record the result below
 
 Modrinth's current policies require disclosure of significant AI-assisted content and prohibit primarily AI-generated project-page images. Review the current rules before submission: [content disclosures](https://support.modrinth.com/en/articles/16567675-content-disclosures) and [AI usage](https://support.modrinth.com/en/articles/16551575-disclosure-and-usage-of-ai).
 
+The project artwork has been supplied. Before upload, confirm that the selected icon, gallery images, and thumbnail meet the current storefront policy and include any required disclosure.
+
 ## Publication steps
 
 1. Verify the version in `gradle.properties`, run `clean build`, and install only the resulting remapped jar for the final pass.

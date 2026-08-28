@@ -114,10 +114,10 @@ public final class ObserverCameraManager {
         return disableFor(player.level().getServer(), player.getUUID());
     }
 
-    public static void setRecordingFor(ServerPlayer player, boolean recording) {
+    public static void pulseFor(ServerPlayer player) {
         ObserverCameraEntity observer = findFor(player);
         if (observer != null) {
-            observer.setRecording(recording);
+            observer.pulse();
         }
     }
 
