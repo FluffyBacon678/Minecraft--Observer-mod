@@ -28,6 +28,7 @@ public final class ObserverCamClient implements ClientModInitializer {
     private static final ObserverPovController POV = new ObserverPovController();
     private static KeyMapping cameramanKey;
     private static KeyMapping recordKey;
+    private static KeyMapping saveReplayKey;
 
     @Override
     public void onInitializeClient() {
@@ -42,7 +43,7 @@ public final class ObserverCamClient implements ClientModInitializer {
                 "key.observercam.toggle_recording", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_UNKNOWN, category));
         KeyMapping pictureInPictureKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
                 "key.observercam.toggle_pip", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_UNKNOWN, category));
-        KeyMapping saveReplayKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
+        saveReplayKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
                 "key.observercam.save_replay", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_UNKNOWN, category));
 
         ClientPlayNetworking.registerGlobalReceiver(ToggleViewPayload.TYPE, (payload, context) -> POV.toggle(context.client()));
@@ -112,6 +113,12 @@ public final class ObserverCamClient implements ClientModInitializer {
 
     public static Component recordingKeyText() {
         return keyText(recordKey);
+    }
+
+    public static Component replaySaveHint() {
+        return saveReplayKey == null || saveReplayKey.isUnbound()
+                ? Component.translatable("observercam.replay.hud.save_menu")
+                : Component.translatable("observercam.replay.hud.save_key", saveReplayKey.getTranslatedKeyMessage());
     }
 
     private static Component keyText(KeyMapping mapping) {

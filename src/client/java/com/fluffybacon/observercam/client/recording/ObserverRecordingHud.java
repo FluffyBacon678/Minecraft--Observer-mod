@@ -1,5 +1,6 @@
 package com.fluffybacon.observercam.client.recording;
 
+import com.fluffybacon.observercam.client.ObserverCamClient;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 
@@ -38,7 +39,8 @@ public final class ObserverRecordingHud {
             text = "Saving instant replay…";
             indicatorColor = 0xFFFFA020;
         } else {
-            text = "REPLAY  " + time + "  " + size + "  F9 save  dropped "
+            text = "REPLAY  " + time + "  " + size + "  "
+                    + ObserverCamClient.replaySaveHint().getString() + "  dropped "
                     + manager.replayDroppedFrames();
             indicatorColor = 0xFFE03030;
         }

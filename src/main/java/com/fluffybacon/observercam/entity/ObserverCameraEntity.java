@@ -187,7 +187,7 @@ public final class ObserverCameraEntity extends Entity {
     }
 
     public void pulse() {
-        entityData.set(POWERED_TICKS, ObserverPulseTiming.start());
+        entityData.set(POWERED_TICKS, ObserverPulseTiming.activate(poweredTicks()));
     }
 
     private int poweredTicks() {

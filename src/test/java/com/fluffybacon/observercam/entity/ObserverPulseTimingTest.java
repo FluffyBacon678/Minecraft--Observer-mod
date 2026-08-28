@@ -9,7 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 final class ObserverPulseTimingTest {
     @Test
     void poweredStateLastsExactlyOneRedstoneTick() {
-        int remaining = ObserverPulseTiming.start();
+        int remaining = ObserverPulseTiming.activate(0);
 
         assertEquals(2, remaining);
         assertTrue(ObserverPulseTiming.isPowered(remaining));
@@ -24,5 +24,11 @@ final class ObserverPulseTimingTest {
     void timingNeverBecomesNegative() {
         assertEquals(0, ObserverPulseTiming.advance(0));
         assertFalse(ObserverPulseTiming.isPowered(-1));
+    }
+
+    @Test
+    void overlappingSignalsDoNotExtendAnActivePulse() {
+        assertEquals(1, ObserverPulseTiming.activate(1));
+        assertEquals(2, ObserverPulseTiming.activate(0));
     }
 }

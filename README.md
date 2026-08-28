@@ -33,8 +33,6 @@ FFmpeg is not needed for the cameraman, Observer POV, or PiP. Install or select 
 - `/observercam follow` — targets the executing player and starts following; summons an Observer if needed.
 - `/observercam dismiss` — removes your Observer.
 - `/observercam view` — toggles the executing player's Observer POV.
-- `O` — toggles Observer POV by default and can be rebound under Observer Cam controls.
-- **Enable/disable Observer cameraman** — unbound by default; assign it under Observer Cam controls or use Mod Menu.
 - Every Observer Cam shortcut is unbound by default so the mod cannot take a key used by Minecraft or another mod. Assign only the controls you want under **Options → Controls → Key Binds → Observer Cam**.
 - Cameraman, Observer POV, recording, PiP, and instant-replay save actions remain available from Observer Cam's Mod Menu screens without assigning any shortcut.
 

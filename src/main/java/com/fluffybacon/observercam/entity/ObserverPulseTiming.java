@@ -7,8 +7,8 @@ final class ObserverPulseTiming {
     private ObserverPulseTiming() {
     }
 
-    static int start() {
-        return DURATION_GAME_TICKS;
+    static int activate(int remainingTicks) {
+        return isPowered(remainingTicks) ? remainingTicks : DURATION_GAME_TICKS;
     }
 
     static int advance(int remainingTicks) {

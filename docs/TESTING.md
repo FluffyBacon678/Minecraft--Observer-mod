@@ -28,7 +28,7 @@ The next useful step is a real gameplay pass with the freshly built jar. Begin w
 - **Record audio** is Off after Reset Defaults. Clicking **Audio source** lists only Windows game-audio loopback inputs; if none exists, it explains that recording stays video-only and never offers a microphone as a substitute.
 - **Open video folder** creates and opens the resolved output directory.
 - **Instant Replay** is Off after Reset Defaults, offers Time or Size retention, and exposes **Save recent footage** even when its shortcut is unbound.
-- **Observer picture-in-picture** is Off after Reset Defaults. Its recording and PiP controls are unbound by default and therefore cannot replace an existing key; both remain usable from Mod Menu.
+- **Observer picture-in-picture** is Off after Reset Defaults. Every Observer Cam control is unbound by default and therefore cannot replace an existing key; every action remains usable from Mod Menu.
 
 ## Assistant checks
 
