@@ -16,6 +16,7 @@ All notable user-facing changes to Observer Cam are recorded here.
 
 ### Safety and polish
 
+- Compatible Fabric API updates are accepted instead of requiring exactly 0.141.2, including 0.141.4 for Minecraft 1.21.11.
 - Recording uses bounded queues, safe partial-file finalization, free-space checks, and private marked replay buffers that never evict completed or unrelated files.
 - Recording and PiP hotkeys are deliberately unbound by default to avoid conflicts.
 - Invalid client snapshots and corrupted local numeric settings are sanitized before use.

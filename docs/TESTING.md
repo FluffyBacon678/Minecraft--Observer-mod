@@ -4,7 +4,7 @@ The next useful step is a real gameplay pass with the freshly built jar. Begin w
 
 ## Setup
 
-1. Install Minecraft Java 1.21.11, Fabric Loader 0.18.4 or newer, Fabric API 0.141.2+1.21.11, Observer Cam, and optionally Mod Menu 17.x. Install FFmpeg or select `ffmpeg.exe` in Recording settings before the recording checks.
+1. Install Minecraft Java 1.21.11, Fabric Loader 0.18.4 or newer, a Minecraft 1.21.11-compatible Fabric API version (0.141.2 or newer), Observer Cam, and optionally Mod Menu 17.x. Install FFmpeg or select `ffmpeg.exe` in Recording settings before the recording checks.
 2. Use a disposable world or back up the test world.
 3. Run `/gamemode creative` before movement tests so camera evaluation is not interrupted by player death.
 4. In **Mods → Observer Cam → Configure**, choose **Reset Defaults** and confirm.

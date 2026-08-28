@@ -10,7 +10,7 @@ The current build is a **public-beta candidate**. Core camera movement, Observer
 
 - Minecraft Java Edition **1.21.11**
 - Fabric Loader **0.18.4 or newer**
-- Fabric API **0.141.2+1.21.11**
+- Fabric API **0.141.2+1.21.11 or newer for Minecraft 1.21.11**
 - Java **21**
 - Mod Menu 17.x (optional, for the settings button)
 - [FFmpeg](https://ffmpeg.org/download.html) (required only for video recording; Observer Cam detects the standard Winget package or you can select `ffmpeg.exe` in Recording settings)
@@ -20,7 +20,7 @@ The movement authority lives on the server, so multiplayer servers must install 
 ## Installation
 
 1. Install Fabric Loader 0.18.4 for Minecraft 1.21.11.
-2. Put Fabric API 0.141.2+1.21.11 and the Observer Cam jar in the instance's `mods` folder.
+2. Put a Minecraft 1.21.11-compatible Fabric API version (0.141.2 or newer) and the Observer Cam jar in the instance's `mods` folder.
 3. For multiplayer, install the same two jars on the server. Mod Menu is client-only and optional.
 4. Launch the game, open **Mods → Observer Cam → Configure**, and switch **Cameraman enabled** on.
 
