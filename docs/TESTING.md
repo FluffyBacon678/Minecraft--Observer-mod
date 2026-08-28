@@ -14,7 +14,7 @@ The next useful step is a real gameplay pass with the freshly built jar. Begin w
 ## Configuration checks
 
 - Mod Menu shows the supplied Observer Cam artwork.
-- **Configure** shows direct cameraman, POV, recording, and Observer PiP actions plus the eight category pages in a compact two-column layout.
+- **Configure** shows direct cameraman, POV, recording, and Observer PiP actions plus nine organized category pages in a compact grid.
 - Every slider and toggle has a helpful hover description.
 - Values show useful units, including blocks, degrees, ticks, and percent.
 - Changed values survive leaving and reopening the screen.
@@ -30,6 +30,15 @@ The next useful step is a real gameplay pass with the freshly built jar. Begin w
 - **Instant Replay** is Off after Reset Defaults, offers Time or Size retention, and exposes **Save recent footage** without hiding the `F9` binding.
 - **Observer picture-in-picture** is Off after Reset Defaults. Its recording and PiP controls are unbound by default and therefore cannot replace an existing key; both remain usable from Mod Menu.
 
+## Assistant checks
+
+1. Confirm **Assistant → Talkative assistant** is Off after Reset Defaults and no assistant chat appears.
+2. Turn it On, leave **Say cool facts** On, set **Fact interval** to one minute, and return to active gameplay with your Observer present.
+3. Confirm no message appears immediately. After roughly one active minute, one `[Observer]` fact should appear only in your local chat.
+4. Open a menu when the next fact is due. Confirm it waits until gameplay resumes rather than speaking over the menu.
+5. Turn **Say cool facts** Off and wait another interval; no new fact should appear. Re-enable it and confirm a fresh full interval begins.
+6. On multiplayer, confirm other players do not receive the message and their assistant settings remain independent.
+
 ## Picture-in-picture checks
 
 1. Use the normal player camera and click **Show Observer PiP**. Confirm a live 16:9 Observer feed appears at the upper-left while movement, mining, and placement still control the player.
@@ -37,15 +46,15 @@ The next useful step is a real gameplay pass with the freshly built jar. Begin w
 3. Enter full Observer POV and confirm the duplicate PiP hides; exit POV and confirm it returns.
 4. Hide Minecraft's HUD and confirm the PiP hides with it. Show the HUD and confirm it returns.
 5. Disable PiP and confirm its texture disappears immediately. Rejoin the world and confirm the saved preference is respected.
-6. Test once with shaders. PiP intentionally renders a second world view at 10 FPS; leave it disabled if the shader cost is too high.
+6. Test once with shaders at the recommended Balanced/5 FPS setting; leave PiP disabled if the extra world-render cost is too high.
 
 ## Recording checks
 
-1. Bind **Start/stop Observer recording** under Observer Cam controls or use the Mod Menu button. Enter Observer POV, record normal movement for 20 seconds, then stop. Wait for the saved message before closing Minecraft.
+1. Bind **Start/stop Observer recording** under Observer Cam controls or use the Mod Menu button. From normal player view, start recording, wait for **Observer recording LIVE**, record normal movement for 20 seconds, then stop. Wait for the saved message before closing Minecraft.
 2. Confirm the Observer eye glows red while recording, the compact REC indicator advances, and the resulting video has the expected duration, view, and smooth playback.
 3. Repeat with **Include HUD** enabled and confirm HUD/chat inclusion changes without changing the Observer view.
 4. Repeat once with MKV and once with WebM; confirm every clean stop produces the selected extension and no `.partial` file or FFmpeg log remains.
-5. Repeat with 720p and 1080p. Confirm the files report exactly 1280×720 and 1920×1080, with no stretched image when the game window is not 16:9.
+5. Repeat with 720p and 1080p. Confirm the files report exactly 1280×720 and 1920×1080, with no stretched image when the game window is not 16:9. Test 1440p or 4K only as an explicit high-end performance pass.
 6. Compare High, Balanced, and Smaller Files on the same 20-second scene. High should retain the most detail; Smaller Files should normally use less disk.
 7. Temporarily select a missing executable. Starting should show a clear error and create no broken final video.
 8. Resize the window during a short recording. It should stop and finalize rather than feed mixed frame sizes to FFmpeg.
@@ -57,7 +66,7 @@ If a recording fails, keep the `.partial` file and matching `.ffmpeg.log`; those
 ## Instant replay checks
 
 1. Leave **Instant replay buffer** Off, enter Observer POV, and confirm no REPLAY indicator appears and `F9` explains that the feature is disabled.
-2. Enable it with the Time limit at 0.5 minutes. In Observer POV, confirm the red eye and REPLAY indicator appear automatically.
+2. Enable it with the Time limit at 0.5 minutes. In normal player view, confirm the red eye and REPLAY indicator appear automatically while the Observer feed buffers in the background.
 3. Film for at least 45 seconds, press `F9`, wait for **Instant replay saved**, and confirm the output contains approximately the latest 30 seconds rather than the full 45 seconds.
 4. Keep playing after the save and confirm buffering resumes automatically. Save again and verify the second file contains only footage recorded after buffering resumed.
 5. Select the Size limit, choose the minimum cap, and confirm old segments disappear while the indicator remains active and the global recording folder cap is never crossed.
@@ -77,7 +86,7 @@ In every scenario, verify that the visible Observer face matches its POV, the re
 - Ensemble shot: stand near several visible mobs or another player, then separate them around the scene. The camera should include useful nearby subjects when practical without losing or shrinking the tracked player excessively.
 - House: move through rooms and doorways.
 - Narrow hallway: walk toward and away from walls; the Observer should hold briefly, then recover to a clear visible position rather than repeatedly pushing toward an unreachable shot across a wall.
-- Blocked route: wedge the Observer's route against a corner or close a door across its flight path. It should detect the lack of progress and recover after roughly half a second instead of remaining stuck.
+- Blocked route: wedge the Observer's route against a corner or close a door across its flight path. Brief obstruction should not snap the camera; persistent blockage should recover after roughly two seconds instead of remaining stuck.
 - Forest: pass behind trunks and through leaves.
 - Cave: test low ceilings, corners, and uneven floors.
 - Water: swim at the surface and underwater.

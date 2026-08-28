@@ -1,5 +1,6 @@
 package com.fluffybacon.observercam.config;
 
+import com.fluffybacon.observercam.assistant.AssistantFactScheduler;
 import com.fluffybacon.observercam.recording.InstantReplayLimitMode;
 import com.fluffybacon.observercam.recording.PictureInPictureResolution;
 import com.fluffybacon.observercam.recording.RecordingQuality;
@@ -51,6 +52,10 @@ public final class ObserverCamConfig {
     public boolean followTargetAutomatically = true;
     public boolean allowFrontFacingShots = true;
     public boolean cameramanEnabled = false;
+
+    public boolean assistantEnabled = false;
+    public boolean assistantFactsEnabled = true;
+    public double assistantFactIntervalMinutes = AssistantFactScheduler.DEFAULT_INTERVAL_MINUTES;
 
     public double recordingStorageLimitGb = 3.0;
     public String recordingOutputDirectory = "";
@@ -224,6 +229,7 @@ public final class ObserverCamConfig {
         reframeThreshold = clamp(finiteOr(reframeThreshold, 62.0), 20.0, 90.0);
         preferredPlayerScreenSize = clamp(finiteOr(preferredPlayerScreenSize, 0.34), 0.15, 0.65);
         movementPredictionTicks = clamp(finiteOr(movementPredictionTicks, 5.0), 0.0, 12.0);
+        assistantFactIntervalMinutes = AssistantFactScheduler.sanitizeMinutes(assistantFactIntervalMinutes);
         recordingStorageLimitGb = clamp(finiteOr(recordingStorageLimitGb, 3.0), 0.5, 100.0);
         recordingFrameRate = Math.max(15, Math.min(120, recordingFrameRate));
         pictureInPictureFrameRate = Math.max(2, Math.min(60, pictureInPictureFrameRate));

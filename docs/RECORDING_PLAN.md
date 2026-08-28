@@ -26,8 +26,8 @@ Primary references:
 ## Phase 1 — narrow video-only MVP (implemented)
 
 1. **Start recording** / **Stop recording** is available on the Mod Menu landing page and through a rebindable key which is deliberately unassigned by default.
-2. Recording is allowed only while Observer POV is active. Losing the Observer, leaving the world, exiting POV, resizing the framebuffer, or shutting down finalizes the session safely.
-3. The final Observer framebuffer is captured at the current window resolution. The default is 30 FPS with Minecraft's HUD/chat excluded; **Include HUD** enables the post-GUI capture point.
+2. Recording requires an owned Observer but is available from normal player view or Observer POV. Losing the Observer, leaving the world, resizing the framebuffer, or shutting down finalizes the session safely.
+3. Observer POV captures the main Observer framebuffer. Normal player view uses the shared auxiliary Observer render so the user can continue playing normally. The default is 30 FPS with Minecraft's HUD/chat excluded; **Include HUD** applies only to direct Observer-POV capture.
 4. Minecraft's asynchronous screenshot readback performs the GPU transfer. This reuses the game's maintained render path and is less fragile around Sodium/Iris than owning a second OpenGL readback implementation.
 5. RGBA frames pass through a three-frame bounded queue to a background FFmpeg writer. A slow encoder drops frames instead of blocking the render thread, and only a few missing timeline slots may be duplicated.
 6. Fixed-rate raw frames are piped to a user-selected or PATH-resolved FFmpeg executable. MP4 and MKV use H.264 with `yuv420p`; WebM uses VP9. The command is assembled from fixed safe options rather than arbitrary user arguments.
@@ -49,7 +49,7 @@ Phase 1 deliberately excludes replay timelines, camera editing, 4K supersampling
 
 ## Phase 2B — output quality (implemented)
 
-- Current-window, 720p, and 1080p output presets. Fixed sizes preserve aspect ratio and letterbox only when necessary.
+- Current-window, 720p, 1080p, 1440p, and 4K output presets. Fixed sizes preserve aspect ratio and letterbox only when necessary.
 - High, Balanced, and Smaller Files presets backed by fixed codec-appropriate CRF values rather than arbitrary encoder arguments.
 - The same resolution and quality snapshot applies to normal recording and every segment in an instant-replay session.
 - Friendlier FFmpeg discovery/installation guidance, crash-recovery cleanup, and deeper encoder diagnostics.

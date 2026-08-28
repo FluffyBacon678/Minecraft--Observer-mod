@@ -1,5 +1,6 @@
 package com.fluffybacon.observercam.config;
 
+import com.fluffybacon.observercam.assistant.AssistantFactScheduler;
 import com.fluffybacon.observercam.config.ObserverCamConfig.CameraSettings;
 import com.fluffybacon.observercam.recording.InstantReplayLimitMode;
 import com.fluffybacon.observercam.recording.PictureInPictureResolution;
@@ -13,6 +14,7 @@ import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ObserverCamConfigTest {
     @TempDir
@@ -72,6 +74,21 @@ class ObserverCamConfigTest {
         assertEquals(InstantReplayLimitMode.TIME, config.instantReplayLimitMode);
         assertEquals(2.0, config.instantReplayDurationMinutes);
         assertEquals(1.0, config.instantReplayStorageLimitGb);
+    }
+
+    @Test
+    void assistantDefaultsAreQuietAndFactTimingIsBounded() {
+        ObserverCamConfig config = new ObserverCamConfig();
+
+        assertFalse(config.assistantEnabled);
+        assertTrue(config.assistantFactsEnabled);
+        assertEquals(AssistantFactScheduler.DEFAULT_INTERVAL_MINUTES,
+                config.assistantFactIntervalMinutes);
+
+        config.assistantFactIntervalMinutes = 50.0;
+        config.cameraSettings();
+        assertEquals(AssistantFactScheduler.MAXIMUM_INTERVAL_MINUTES,
+                config.assistantFactIntervalMinutes);
     }
 
     @Test

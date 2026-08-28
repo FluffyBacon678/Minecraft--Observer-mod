@@ -1,6 +1,7 @@
 package com.fluffybacon.observercam.client;
 
 import com.fluffybacon.observercam.ObserverCam;
+import com.fluffybacon.observercam.client.assistant.ObserverAssistant;
 import com.fluffybacon.observercam.client.render.ObserverCameraRenderer;
 import com.fluffybacon.observercam.client.recording.ObserverRecordingHud;
 import com.fluffybacon.observercam.client.recording.ObserverRecordingManager;
@@ -58,10 +59,12 @@ public final class ObserverCamClient implements ClientModInitializer {
             POV.disconnect(client);
             ObserverRecordingState.reset();
             ObserverPictureInPicture.reset();
+            ObserverAssistant.reset();
         });
         ClientLifecycleEvents.CLIENT_STOPPING.register(client -> {
             ObserverRecordingManager.get().shutdown(client);
             ObserverPictureInPicture.reset();
+            ObserverAssistant.reset();
         });
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath(ObserverCam.MOD_ID, "debug_hud"),
                 (graphics, tickCounter) -> ObserverDebugHud.render(graphics));
@@ -87,6 +90,7 @@ public final class ObserverCamClient implements ClientModInitializer {
                 ObserverRecordingManager.get().saveInstantReplay(client);
             }
             ObserverRecordingManager.get().tick(client);
+            ObserverAssistant.tick(client);
             ObserverDebugRenderer.tick(client);
         });
     }

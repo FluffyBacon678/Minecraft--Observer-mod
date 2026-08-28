@@ -8,17 +8,20 @@ All notable user-facing changes to Observer Cam are recorded here.
 
 - Autonomous documentary-style Observer cameraman with indoor/outdoor shot planning, group-aware framing, collision recovery, and smoothly interpolated POV.
 - Mod Menu controls for cameraman state, POV, camera behavior, movement, cinematography, recording, video quality, instant replay, PiP, and debugging.
-- MP4/H.264, MKV/H.264, and WebM/VP9 recording through a bounded FFmpeg pipeline, with current-window, 720p, and 1080p output presets.
+- MP4/H.264, MKV/H.264, and WebM/VP9 recording through a bounded FFmpeg pipeline, with current-window, 720p, 1080p, 1440p, and 4K output presets up to 120 FPS.
 - Optional, off-by-default rolling instant replay with time or size retention and an `F9` save action.
-- Optional, off-by-default 10 FPS Observer picture-in-picture monitor.
+- Optional, off-by-default Observer picture-in-picture monitor with configurable resolution and 2–60 FPS refresh.
+- Optional, off-by-default talkative Observer assistant with local facts and a configurable one-to-five-minute interval.
 - Configurable output directory, **Open video folder**, FFmpeg selector, 3 GB default output-folder cap, and optional Windows loopback audio.
 - Redstone-red Observer eye and compact HUD state while recording or buffering replay.
+- Background Observer recording and replay while the player continues using their normal camera.
 
 ### Safety and polish
 
 - Compatible Fabric API updates are accepted instead of requiring exactly 0.141.2, including 0.141.4 for Minecraft 1.21.11.
 - Recording uses bounded queues, safe partial-file finalization, free-space checks, and private marked replay buffers that never evict completed or unrelated files.
 - Recording and PiP hotkeys are deliberately unbound by default to avoid conflicts.
+- Cameraman and recording hotkeys are visible in Mod Menu; both are deliberately unbound on a clean install.
 - Invalid client snapshots and corrupted local numeric settings are sanitized before use.
 - Config files are replaced atomically when the filesystem supports it.
 - PiP capture and texture cleanup are bounded and resilient across reset/disconnect paths.

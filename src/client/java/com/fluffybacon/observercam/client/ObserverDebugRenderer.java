@@ -29,7 +29,7 @@ public final class ObserverDebugRenderer {
         if (!config.showCandidatePositions && !config.showSelectedCameraPosition && !config.showRaycasts && !config.showCollisionChecks) {
             return;
         }
-        ObserverCameraEntity observer = findObserver(client);
+        ObserverCameraEntity observer = ObserverPovController.findOwnedObserver(client);
         if (observer == null) {
             return;
         }
@@ -58,15 +58,6 @@ public final class ObserverDebugRenderer {
                 particle(level, CYAN, start.add(delta.scale(i / 12.0)));
             }
         }
-    }
-
-    private static ObserverCameraEntity findObserver(Minecraft client) {
-        if (client.getCameraEntity() instanceof ObserverCameraEntity observer) {
-            return observer;
-        }
-        return client.level.getEntities(com.fluffybacon.observercam.ObserverCam.OBSERVER_CAMERA,
-                        client.player.getBoundingBox().inflate(128.0), ObserverCameraEntity::isAlive)
-                .stream().findFirst().orElse(null);
     }
 
     private static void particle(ClientLevel level, DustParticleOptions options, Vec3 position) {

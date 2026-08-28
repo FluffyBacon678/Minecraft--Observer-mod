@@ -1,5 +1,6 @@
 package com.fluffybacon.observercam.client;
 
+import com.fluffybacon.observercam.assistant.AssistantFactScheduler;
 import com.fluffybacon.observercam.config.ObserverCamConfig;
 import com.fluffybacon.observercam.client.recording.ObserverRecordingManager;
 import com.fluffybacon.observercam.client.recording.RecordingState;
@@ -81,16 +82,22 @@ public final class ObserverCamConfigScreen extends Screen {
                 .build());
 
         Category[] categories = Category.values();
+        int categoryColumns = categories.length > 8 ? 3 : 2;
+        int categoryGap = 4;
+        int expandedWidth = categoryColumns == 3 && width >= 480 ? 452 : CONTENT_WIDTH;
+        int categoryWidth = (expandedWidth - (categoryColumns - 1) * categoryGap) / categoryColumns;
+        int categoryStartX = width / 2 - expandedWidth / 2;
         for (int index = 0; index < categories.length; index++) {
             Category category = categories[index];
-            int categoryX = x + (index % 2) * 152;
-            int categoryY = 118 + (index / 2) * 24;
+            int categoryX = categoryStartX + (index % categoryColumns) * (categoryWidth + categoryGap);
+            int categoryY = 118 + (index / categoryColumns) * 24;
             addRenderableWidget(Button.builder(category.title(), button -> minecraft.setScreen(new CategoryScreen(this, category)))
                     .tooltip(Tooltip.create(category.description()))
-                    .bounds(categoryX, categoryY, 148, 20)
+                    .bounds(categoryX, categoryY, categoryWidth, 20)
                     .build());
         }
-        int actionY = Math.min(height - 30, 126 + ((categories.length + 1) / 2) * 24);
+        int categoryRows = (categories.length + categoryColumns - 1) / categoryColumns;
+        int actionY = Math.min(height - 30, 126 + categoryRows * 24);
         addRenderableWidget(Button.builder(Component.translatable("observercam.config.reset"), button -> confirmReset())
                 .tooltip(Tooltip.create(Component.translatable("observercam.config.reset.tooltip")))
                 .bounds(x, actionY, 148, 20)
@@ -235,6 +242,7 @@ public final class ObserverCamConfigScreen extends Screen {
         CAMERA("camera"),
         MOVEMENT("movement"),
         DIRECTOR("director"),
+        ASSISTANT("assistant"),
         RECORDING("recording"),
         VIDEO("video"),
         PICTURE_IN_PICTURE("picture_in_picture"),
@@ -298,6 +306,16 @@ public final class ObserverCamConfigScreen extends Screen {
                         bool("cameraman_enabled", () -> c.cameramanEnabled, ObserverCamClient::setCameramanEnabled),
                         bool("follow_automatically", () -> c.followTargetAutomatically, v -> c.followTargetAutomatically = v),
                         bool("allow_front_shots", () -> c.allowFrontFacingShots, v -> c.allowFrontFacingShots = v)
+                );
+                case ASSISTANT -> List.of(
+                        bool("assistant_enabled", () -> c.assistantEnabled, v -> c.assistantEnabled = v),
+                        bool("assistant_facts_enabled", () -> c.assistantFactsEnabled,
+                                v -> c.assistantFactsEnabled = v),
+                        number("assistant_fact_interval", "minutes",
+                                AssistantFactScheduler.MINIMUM_INTERVAL_MINUTES,
+                                AssistantFactScheduler.MAXIMUM_INTERVAL_MINUTES,
+                                0, () -> c.assistantFactIntervalMinutes,
+                                v -> c.assistantFactIntervalMinutes = Math.round(v))
                 );
                 case RECORDING -> List.of(
                         directory("recording_output_directory"),

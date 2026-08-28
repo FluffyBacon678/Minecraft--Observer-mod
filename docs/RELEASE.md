@@ -24,6 +24,7 @@ Run these against the exact jar intended for release and record the result below
 - [ ] Recording failure paths: missing FFmpeg, resize, disconnect, forced encoder exit, nearly full configured cap, and low free disk.
 - [ ] Instant replay time eviction, size eviction, save/resume, POV exit, and normal-recording handoff.
 - [ ] Dedicated server with two clients: ownership, separate per-player settings, targeting another player, POV restoration, disconnect, and dimension change.
+- [ ] Talkative assistant: opt-in defaults, one-to-five-minute timing, menu deferral, local-only multiplayer delivery, and no immediate/repeated message on re-enable.
 - [ ] Final compatibility pass with the actual release modpack and shaders; check the log for mixin conflicts or renderer errors.
 - [ ] Confirm the bundled artwork's origin and distribution rights. If any bundled asset or substantial project material was AI-assisted, disclose that honestly where the host requires it.
 - [ ] Prepare non-AI-generated, policy-compliant storefront icon/gallery screenshots with useful alt text. Do not assume the bundled thumbnail is acceptable for a public listing.
@@ -50,7 +51,7 @@ Modrinth's current policies require disclosure of significant AI-assisted conten
 ## Post-beta work, not a first-release blocker
 
 - ReplayMod or Flashback camera-pose integration.
-- Capability-probed hardware encoders and higher-than-1080p export.
+- Capability-probed hardware encoders.
 - Cross-platform game-audio loopback discovery without third-party drivers.
-- Configurable PiP placement/scale and background recording from PiP.
+- Configurable PiP placement, scale, margin, and opacity.
 - Broader Minecraft/Fabric API compatibility claims after separate testing.

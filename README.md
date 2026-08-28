@@ -2,7 +2,7 @@
 
 <img src="src/client/resources/assets/observercam/icon.png" alt="Observer Cam project artwork" width="320">
 
-Observer Cam is a Fabric mod that adds an autonomous, floating Observer-block cameraman. The visible Observer is the camera: its observing face supplies the exact position, yaw, and pitch used by Observer POV.
+Observer Cam is a Fabric mod that adds an autonomous, floating Observer-block cameraman. The visible Observer is the camera: its observing face supplies the exact position, yaw, and pitch used by Observer POV. An optional talkative-assistant layer can give that camera character a small amount of client-local personality.
 
 The current build is a **public-beta candidate**. Core camera movement, Observer POV, recording, instant replay, and PiP are implemented; the remaining work is the final multi-scenario gameplay acceptance pass described in [Release readiness](docs/RELEASE.md).
 
@@ -34,6 +34,7 @@ FFmpeg is not needed for the cameraman, Observer POV, or PiP. Install or select 
 - `/observercam dismiss` — removes your Observer.
 - `/observercam view` — toggles the executing player's Observer POV.
 - `O` — toggles Observer POV by default and can be rebound under Observer Cam controls.
+- **Enable/disable Observer cameraman** — unbound by default; assign it under Observer Cam controls or use Mod Menu.
 - **Start/stop Observer recording** — unbound by default to avoid conflicts; assign it under Observer Cam controls or use the Mod Menu button.
 - **Show/hide Observer picture-in-picture** — unbound by default; assign it under Observer Cam controls or use **Show/Hide Observer PiP** in Mod Menu.
 - `F9` — saves the recent footage retained by the optional instant replay buffer.
@@ -59,13 +60,15 @@ Normal movement is acceleration- and speed-limited. The Observer checks its full
 
 ## Configuration
 
-Open **Mods → Observer Cam → Configure** when Mod Menu is installed. Quick cameraman, POV, and recording actions appear first; Camera, Movement, Cinematography, Behavior, Recording, Video Quality, Instant Replay, and Debug settings use a compact two-column category layout below them. Settings are saved to `config/observercam.json` and applied live when safe. Camera behavior settings are validated and synchronized as a per-player snapshot, so one player's preferences cannot overwrite another player's director on a dedicated server. Hover any control for a plain-language explanation; numeric settings display their units, and **Reset Defaults** asks for confirmation before replacing the configuration.
+Open **Mods → Observer Cam → Configure** when Mod Menu is installed. Quick cameraman, POV, recording, and PiP actions appear first; Camera, Movement, Auto Director, Assistant, Recording, Video Output, PiP, Instant Replay, and Diagnostics use a compact category grid below them. Settings are saved to `config/observercam.json` and applied live when safe. Camera behavior settings are validated and synchronized as a per-player snapshot, so one player's preferences cannot overwrite another player's director on a dedicated server. Hover any control for a plain-language explanation; numeric settings display their units, and **Reset Defaults** asks for confirmation before replacing the configuration.
 
-The **Recording** page chooses and opens the output folder, selects an FFmpeg executable, optionally selects a Windows game-audio loopback source, and controls the total storage cap. **Video Quality** selects MP4/H.264, MKV/H.264, or WebM/VP9; Current Window, 720p, or 1080p output; High, Balanced, or Smaller Files compression; 15–60 FPS; and HUD inclusion. Fixed resolutions preserve the captured aspect ratio and use black bars only when required. An empty output setting resolves to `observercam/recordings` inside the current game directory. The combined folder budget defaults to **3 GB** and is checked throughout each recording; Observer Cam stops safely before crossing the limit and never deletes completed videos. Clean recordings are finalized from a `.partial` name, while failed sessions retain a small diagnostic log.
+The **Recording** page chooses and opens the output folder, selects an FFmpeg executable, optionally selects a Windows game-audio loopback source, and controls the total storage cap. **Video Output** selects MP4/H.264, MKV/H.264, or WebM/VP9; Current Window, 720p, 1080p, 1440p, or 4K output; High, Balanced, or Smaller Files compression; 15–120 FPS; and HUD inclusion. Fixed resolutions preserve the captured aspect ratio and use black bars only when required. An empty output setting resolves to `observercam/recordings` inside the current game directory. The combined folder budget defaults to **3 GB** and is checked throughout each recording; Observer Cam stops safely before crossing the limit and never deletes completed videos. Clean recordings are finalized from a `.partial` name, while failed sessions retain a small diagnostic log. Recording can use a clean background Observer render while the player continues using their normal view.
 
-**Instant Replay** is off by default. When enabled, it starts buffering automatically while Observer POV is active and retains only the latest configured time or size. Press `F9` or **Save recent footage** to turn the retained two-second segments into a normal video; buffering resumes automatically afterward. Its hidden temporary directory is private to Observer Cam, and eviction never touches completed videos or unrelated files. Starting a normal recording briefly pauses and discards the rolling buffer so two encoders do not compete for the GPU/CPU. See the [recording plan](docs/RECORDING_PLAN.md) for implementation and safety details.
+**Instant Replay** is off by default. When enabled, it starts buffering automatically while the Observer is available—whether the player uses normal view or Observer POV—and retains only the latest configured time or size. Press `F9` or **Save recent footage** to turn the retained two-second segments into a normal video; buffering resumes automatically afterward. Its hidden temporary directory is private to Observer Cam, and eviction never touches completed videos or unrelated files. Starting a normal recording briefly pauses and discards the rolling buffer so two encoders do not compete for the GPU/CPU. See the [recording plan](docs/RECORDING_PLAN.md) for implementation and safety details.
 
-**Observer picture-in-picture** is off by default. It renders a bounded 10 FPS live feed from the Observer in the upper-left corner while the normal player camera remains active. The preview hides automatically in full Observer POV and when Minecraft's HUD is hidden. Because it performs a second world render for each preview update, leave it off when maximum shader performance is more important than monitoring the shot.
+**Observer picture-in-picture** is off by default. It renders a bounded live feed from the Observer in the upper-left corner while the normal player camera remains active. Its render resolution and 2–60 FPS refresh rate are configurable; Balanced at 5 FPS is the low-impact default. The preview hides automatically in full Observer POV and when Minecraft's HUD is hidden. Because it performs a second world render for each preview update, leave it off when maximum shader performance is more important than monitoring the shot.
+
+**Talkative assistant** is off by default. When enabled, the player's own Observer can place occasional facts in local client chat. **Say cool facts** can be disabled independently, and **Fact interval** controls a one-to-five-minute delay. Messages are never sent to the server or other players, and the assistant waits for active gameplay rather than speaking over menus.
 
 Game audio is optional and off by default. When Windows already provides a loopback source such as **Stereo Mix**, choose it under **Recording → Audio source**, then enable **Record audio**. Audio and video share one FFmpeg process and timeline; MP4/MKV use AAC and WebM uses Opus, including instant-replay segments. Observer Cam does not install an audio driver, replace Minecraft's OpenAL context, or show microphones in its game-audio picker. If Windows exposes no loopback source, recording remains video-only.
 
@@ -80,10 +83,9 @@ The debug HUD reports the current director state, distance, target, visibility, 
 ## Known limitations
 
 - This beta is intentionally pinned to Minecraft 1.21.11 and the tested Fabric API build.
-- Normal recording and instant replay capture only while full Observer POV is active. PiP is a monitoring view, not a background recorder.
 - Video export requires a separate FFmpeg installation. Observer Cam does not bundle or download it.
 - Automatic game-audio source selection is Windows-only and uses an already available loopback source. No audio driver is installed, and video-only recording remains the default.
-- PiP performs a second world render at 10 FPS, so demanding shader packs can make it expensive.
+- PiP and background capture perform a second world render at their configured rate, so demanding resolutions, frame rates, and shader packs can make them expensive.
 - ReplayMod and Flashback camera-track integration is not implemented or advertised as compatible yet.
 
 ## Build and run
