@@ -361,6 +361,10 @@ public final class ObserverCamConfigScreen extends Screen {
                                 () -> Component.translatable("observercam.config.pip_size."
                                         + c.pictureInPictureSize.id()),
                                 () -> c.pictureInPictureSize = c.pictureInPictureSize.next(), false),
+                        choice("picture_in_picture_frame_style",
+                                () -> Component.translatable("observercam.config.pip_frame_style."
+                                        + c.pictureInPictureFrameStyle.id()),
+                                () -> c.pictureInPictureFrameStyle = c.pictureInPictureFrameStyle.next(), false),
                         choice("picture_in_picture_resolution",
                                 () -> Component.translatable("observercam.config.pip_resolution."
                                         + c.pictureInPictureResolution.id()),

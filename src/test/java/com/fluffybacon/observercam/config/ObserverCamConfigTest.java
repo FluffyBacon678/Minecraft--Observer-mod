@@ -3,6 +3,7 @@ package com.fluffybacon.observercam.config;
 import com.fluffybacon.observercam.assistant.AssistantFactScheduler;
 import com.fluffybacon.observercam.config.ObserverCamConfig.CameraSettings;
 import com.fluffybacon.observercam.recording.InstantReplayLimitMode;
+import com.fluffybacon.observercam.recording.PictureInPictureFrameStyle;
 import com.fluffybacon.observercam.recording.PictureInPictureResolution;
 import com.fluffybacon.observercam.recording.PictureInPictureSize;
 import com.fluffybacon.observercam.recording.RecordingQuality;
@@ -70,6 +71,7 @@ class ObserverCamConfigTest {
         assertEquals(30, config.recordingFrameRate);
         assertFalse(config.recordingIncludeHud);
         assertEquals(PictureInPictureSize.BIG, config.pictureInPictureSize);
+        assertEquals(PictureInPictureFrameStyle.COMPACT, config.pictureInPictureFrameStyle);
         assertEquals(PictureInPictureResolution.BALANCED, config.pictureInPictureResolution);
         assertEquals(5, config.pictureInPictureFrameRate);
         assertEquals(1.0, config.pictureInPictureOpacity);
@@ -130,6 +132,10 @@ class ObserverCamConfigTest {
         assertEquals(PictureInPictureSize.MEDIUM, PictureInPictureSize.SMALL.next());
         assertEquals(PictureInPictureSize.BIG, PictureInPictureSize.MEDIUM.next());
         assertEquals(PictureInPictureSize.SMALL, PictureInPictureSize.BIG.next());
+        assertEquals(PictureInPictureFrameStyle.LABELED, PictureInPictureFrameStyle.COMPACT.next());
+        assertEquals(PictureInPictureFrameStyle.COMPACT, PictureInPictureFrameStyle.LABELED.next());
+        assertFalse(PictureInPictureFrameStyle.COMPACT.statusBarVisible());
+        assertTrue(PictureInPictureFrameStyle.LABELED.statusBarVisible());
         assertEquals(PictureInPictureResolution.BALANCED, PictureInPictureResolution.PERFORMANCE.next());
     }
 
@@ -159,15 +165,18 @@ class ObserverCamConfigTest {
     }
 
     @Test
-    void olderConfigurationsKeepTheOriginalBigPictureInPictureSize() {
+    void olderConfigurationsReceiveSafePictureInPictureDisplayDefaults() {
         ObserverCamConfig migrated = new Gson().fromJson("{}", ObserverCamConfig.class);
         assertEquals(PictureInPictureSize.BIG, migrated.pictureInPictureSize);
+        assertEquals(PictureInPictureFrameStyle.COMPACT, migrated.pictureInPictureFrameStyle);
         assertTrue(migrated.assistantSpeechBubbleEnabled);
         assertTrue(migrated.assistantShowFactsInChat);
         assertFalse(migrated.assistantReadFactsAloud);
 
         migrated.pictureInPictureSize = null;
+        migrated.pictureInPictureFrameStyle = null;
         migrated.cameraSettings();
         assertEquals(PictureInPictureSize.BIG, migrated.pictureInPictureSize);
+        assertEquals(PictureInPictureFrameStyle.COMPACT, migrated.pictureInPictureFrameStyle);
     }
 }

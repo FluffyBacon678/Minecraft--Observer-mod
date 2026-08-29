@@ -6,6 +6,7 @@ import com.fluffybacon.observercam.client.recording.ObserverRecordingManager;
 import com.fluffybacon.observercam.config.ObserverCamConfig;
 import com.fluffybacon.observercam.entity.ObserverCameraEntity;
 import com.fluffybacon.observercam.recording.CaptureSize;
+import com.fluffybacon.observercam.recording.PictureInPictureFrameStyle;
 import com.fluffybacon.observercam.recording.PictureInPictureSize;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.pipeline.TextureTarget;
@@ -199,26 +200,31 @@ public final class ObserverPictureInPicture {
         ObserverCamConfig config = ObserverCamConfig.get();
         PictureInPictureSize windowSize = config.pictureInPictureSize == null
                 ? PictureInPictureSize.BIG : config.pictureInPictureSize;
+        PictureInPictureFrameStyle frameStyle = config.pictureInPictureFrameStyle == null
+                ? PictureInPictureFrameStyle.COMPACT : config.pictureInPictureFrameStyle;
+        int headerHeight = frameStyle.statusBarVisible() ? HEADER_HEIGHT : 0;
         int displayWidth = windowSize.displayWidth(graphics.guiWidth());
         int displayHeight = Math.max(1, Math.round(displayWidth * feedTarget.height / (float) feedTarget.width));
         int opacity = opacityAlpha(config.pictureInPictureOpacity);
         int imageX = SCREEN_MARGIN + FRAME_WIDTH;
-        int imageY = SCREEN_MARGIN + FRAME_WIDTH + HEADER_HEIGHT;
+        int imageY = SCREEN_MARGIN + FRAME_WIDTH + headerHeight;
 
         graphics.fill(SCREEN_MARGIN, SCREEN_MARGIN,
                 SCREEN_MARGIN + displayWidth + FRAME_WIDTH * 2,
-                SCREEN_MARGIN + displayHeight + HEADER_HEIGHT + FRAME_WIDTH * 2,
+                SCREEN_MARGIN + displayHeight + headerHeight + FRAME_WIDTH * 2,
                 withOpacity(0xD0080A0C, opacity));
-        graphics.fill(imageX, SCREEN_MARGIN + FRAME_WIDTH,
-                imageX + displayWidth, imageY,
-                withOpacity(0xD0182028, opacity));
-        graphics.fill(SCREEN_MARGIN + 4, SCREEN_MARGIN + 4,
-                SCREEN_MARGIN + 7, SCREEN_MARGIN + 7, withOpacity(0xFFFF2020, opacity));
-        Component fullStatus = Component.translatable(FULL_STATUS_KEY);
-        Component statusLabel = client.font.width(fullStatus) + 12 <= displayWidth
-                ? fullStatus : Component.translatable(COMPACT_STATUS_KEY);
-        graphics.drawString(client.font, statusLabel, SCREEN_MARGIN + 10, SCREEN_MARGIN + 2,
-                withOpacity(0xFFFFFFFF, opacity), true);
+        if (frameStyle.statusBarVisible()) {
+            graphics.fill(imageX, SCREEN_MARGIN + FRAME_WIDTH,
+                    imageX + displayWidth, imageY,
+                    withOpacity(0xD0182028, opacity));
+            graphics.fill(SCREEN_MARGIN + 4, SCREEN_MARGIN + 4,
+                    SCREEN_MARGIN + 7, SCREEN_MARGIN + 7, withOpacity(0xFFFF2020, opacity));
+            Component fullStatus = Component.translatable(FULL_STATUS_KEY);
+            Component statusLabel = client.font.width(fullStatus) + 12 <= displayWidth
+                    ? fullStatus : Component.translatable(COMPACT_STATUS_KEY);
+            graphics.drawString(client.font, statusLabel, SCREEN_MARGIN + 10, SCREEN_MARGIN + 2,
+                    withOpacity(0xFFFFFFFF, opacity), true);
+        }
         graphics.blit(RenderPipelines.GUI_TEXTURED, TEXTURE_ID,
                 imageX, imageY,
                 0.0F, feedTarget.height,

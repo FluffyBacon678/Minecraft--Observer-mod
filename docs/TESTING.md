@@ -50,8 +50,9 @@ The next useful step is a real gameplay pass with the freshly built jar. Begin w
 4. Hide Minecraft's HUD and confirm the PiP hides with it. Show the HUD and confirm it returns.
 5. Disable PiP and confirm its texture disappears immediately. Rejoin the world and confirm the saved preference is respected.
 6. Test once with shaders at the recommended Balanced/5 FPS setting; leave PiP disabled if the extra world-render cost is too high.
-7. Set **PiP opacity** to 25%, 50%, and 100%. Confirm the live image, status header, text, and one-pixel frame fade together, remain correctly oriented, and other HUD elements keep their normal opacity.
-8. Cycle **PiP window size** through Small, Medium, and Big. Confirm the aspect ratio remains correct, Small uses a readable compact status label when necessary, and Big matches the previous PiP size.
+7. Confirm **PiP frame style** defaults to Compact: no status text or header should consume space, and only the one-pixel outline should surround the image. Switch to Labeled and confirm the red-dot **OBSERVER LIVE** header returns without covering the feed.
+8. Set **PiP opacity** to 25%, 50%, and 100%. Confirm the live image and selected frame style fade together, remain correctly oriented, and other HUD elements keep their normal opacity.
+9. Cycle **PiP window size** through Small, Medium, and Big. Confirm the aspect ratio remains correct and Big matches the previous PiP image size.
 
 ## Recording checks
 
