@@ -55,5 +55,5 @@ The project artwork has been supplied. Before upload, confirm that the selected 
 - ReplayMod or Flashback camera-pose integration.
 - Capability-probed hardware encoders.
 - Cross-platform game-audio loopback discovery without third-party drivers.
-- Configurable PiP placement, scale, margin, and opacity.
+- Configurable PiP placement, scale, and margin. PiP opacity is implemented for this release.
 - Broader Minecraft/Fabric API compatibility claims after separate testing.

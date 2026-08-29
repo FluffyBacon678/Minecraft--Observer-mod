@@ -354,7 +354,10 @@ public final class ObserverCamConfigScreen extends Screen {
                                 () -> c.pictureInPictureResolution = c.pictureInPictureResolution.next(), false),
                         number("picture_in_picture_frame_rate", "frames_per_second", 2, 60, 0,
                                 () -> c.pictureInPictureFrameRate,
-                                v -> c.pictureInPictureFrameRate = (int) Math.round(v))
+                                v -> c.pictureInPictureFrameRate = (int) Math.round(v)),
+                        number("picture_in_picture_opacity", "percent", 25, 100, 0,
+                                () -> c.pictureInPictureOpacity * 100.0,
+                                v -> c.pictureInPictureOpacity = v / 100.0)
                 );
                 case REPLAY -> List.of(
                         action("save_instant_replay", () -> ObserverRecordingManager.get()

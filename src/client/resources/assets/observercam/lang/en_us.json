@@ -135,6 +135,8 @@
   "observercam.config.pip_resolution.ultra": "Ultra (1280×720)",
   "observercam.config.setting.picture_in_picture_frame_rate": "PiP refresh rate",
   "observercam.config.setting.picture_in_picture_frame_rate.tooltip": "How often the Observer preview renders, up to 60 FPS. 5 FPS is the recommended low-impact default.",
+  "observercam.config.setting.picture_in_picture_opacity": "PiP opacity",
+  "observercam.config.setting.picture_in_picture_opacity.tooltip": "Adjusts the transparency of the entire live preview, including its image and compact frame. 100% is fully opaque.",
   "observercam.config.setting.recording_ffmpeg": "FFmpeg executable",
   "observercam.config.setting.recording_ffmpeg.tooltip": "Select ffmpeg.exe if FFmpeg is not available through your system PATH. Reset Defaults returns to automatic PATH detection.",
   "observercam.config.ffmpeg.choose": "Choose FFmpeg executable",

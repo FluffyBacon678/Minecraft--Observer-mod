@@ -15,6 +15,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.TextureFilteringMethod;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.texture.AbstractTexture;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
@@ -191,17 +192,42 @@ public final class ObserverPictureInPicture {
         }
         int displayWidth = Math.max(96, Math.min(200, graphics.guiWidth() / 3));
         int displayHeight = Math.max(54, Math.round(displayWidth * feedTarget.height / (float) feedTarget.width));
-        int x = 8;
-        int y = 8;
-        int headerHeight = 13;
-        graphics.fill(x, y, x + displayWidth + 4, y + displayHeight + headerHeight + 4, 0xD0080A0C);
-        graphics.fill(x + 2, y + 2, x + displayWidth + 2, y + headerHeight + 1, 0xD0182028);
-        graphics.fill(x + 6, y + 6, x + 10, y + 10, 0xFFFF2020);
-        graphics.drawString(client.font, "OBSERVER  LIVE", x + 14, y + 4, 0xFFFFFFFF, true);
-        graphics.blit(TEXTURE_ID,
-                x + 2, y + headerHeight + 2,
-                x + displayWidth + 2, y + displayHeight + headerHeight + 2,
-                0.0F, 1.0F, 1.0F, 0.0F);
+        int x = 4;
+        int y = 4;
+        int frameWidth = 1;
+        int headerHeight = 11;
+        int opacity = opacityAlpha(ObserverCamConfig.get().pictureInPictureOpacity);
+        int imageX = x + frameWidth;
+        int imageY = y + frameWidth + headerHeight;
+
+        graphics.fill(x, y,
+                x + displayWidth + frameWidth * 2,
+                y + displayHeight + headerHeight + frameWidth * 2,
+                withOpacity(0xD0080A0C, opacity));
+        graphics.fill(imageX, y + frameWidth,
+                imageX + displayWidth, imageY,
+                withOpacity(0xD0182028, opacity));
+        graphics.fill(x + 4, y + 4, x + 7, y + 7, withOpacity(0xFFFF2020, opacity));
+        graphics.drawString(client.font, "OBSERVER  LIVE", x + 10, y + 2,
+                withOpacity(0xFFFFFFFF, opacity), true);
+        graphics.blit(RenderPipelines.GUI_TEXTURED, TEXTURE_ID,
+                imageX, imageY,
+                0.0F, feedTarget.height,
+                displayWidth, displayHeight,
+                feedTarget.width, -feedTarget.height,
+                feedTarget.width, feedTarget.height,
+                (opacity << 24) | 0x00FFFFFF);
+    }
+
+    private static int opacityAlpha(double opacity) {
+        double safeOpacity = Double.isFinite(opacity) ? opacity : 1.0;
+        return (int) Math.round(Math.max(0.25, Math.min(1.0, safeOpacity)) * 255.0);
+    }
+
+    private static int withOpacity(int color, int opacity) {
+        int sourceAlpha = color >>> 24;
+        int scaledAlpha = (sourceAlpha * opacity + 127) / 255;
+        return (color & 0x00FFFFFF) | (scaledAlpha << 24);
     }
 
     public static void reset() {

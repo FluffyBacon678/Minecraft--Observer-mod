@@ -67,6 +67,7 @@ public final class ObserverCamConfig {
     public boolean pictureInPictureEnabled = false;
     public PictureInPictureResolution pictureInPictureResolution = PictureInPictureResolution.BALANCED;
     public int pictureInPictureFrameRate = 5;
+    public double pictureInPictureOpacity = 1.0;
     public String recordingFfmpegPath = "ffmpeg";
     public boolean recordingAudioEnabled = false;
     public String recordingAudioDevice = "";
@@ -233,6 +234,7 @@ public final class ObserverCamConfig {
         recordingStorageLimitGb = clamp(finiteOr(recordingStorageLimitGb, 3.0), 0.5, 100.0);
         recordingFrameRate = Math.max(15, Math.min(120, recordingFrameRate));
         pictureInPictureFrameRate = Math.max(2, Math.min(60, pictureInPictureFrameRate));
+        pictureInPictureOpacity = clamp(finiteOr(pictureInPictureOpacity, 1.0), 0.25, 1.0);
         instantReplayDurationMinutes = clamp(finiteOr(instantReplayDurationMinutes, 2.0), 0.5, 30.0);
         instantReplayStorageLimitGb = clamp(finiteOr(instantReplayStorageLimitGb, 1.0),
                 0.25, recordingStorageLimitGb);

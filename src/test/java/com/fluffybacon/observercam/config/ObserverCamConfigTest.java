@@ -69,6 +69,7 @@ class ObserverCamConfigTest {
         assertFalse(config.recordingIncludeHud);
         assertEquals(PictureInPictureResolution.BALANCED, config.pictureInPictureResolution);
         assertEquals(5, config.pictureInPictureFrameRate);
+        assertEquals(1.0, config.pictureInPictureOpacity);
         assertEquals("ffmpeg", config.recordingFfmpegPath);
         assertFalse(config.instantReplayEnabled);
         assertEquals(InstantReplayLimitMode.TIME, config.instantReplayLimitMode);
@@ -98,6 +99,7 @@ class ObserverCamConfigTest {
         config.cameraFov = Double.POSITIVE_INFINITY;
         config.maximumSpeed = Double.NEGATIVE_INFINITY;
         config.recordingStorageLimitGb = Double.NaN;
+        config.pictureInPictureOpacity = Double.NaN;
         config.instantReplayDurationMinutes = Double.POSITIVE_INFINITY;
         config.instantReplayStorageLimitGb = Double.NaN;
 
@@ -107,6 +109,7 @@ class ObserverCamConfigTest {
         assertEquals(70.0, config.cameraFov);
         assertEquals(0.65, config.maximumSpeed);
         assertEquals(3.0, config.recordingStorageLimitGb);
+        assertEquals(1.0, config.pictureInPictureOpacity);
         assertEquals(2.0, config.instantReplayDurationMinutes);
         assertEquals(1.0, config.instantReplayStorageLimitGb);
     }
@@ -131,5 +134,18 @@ class ObserverCamConfigTest {
 
         assertEquals(120, config.recordingFrameRate);
         assertEquals(60, config.pictureInPictureFrameRate);
+    }
+
+    @Test
+    void pictureInPictureOpacityRemainsVisibleAndBounded() {
+        ObserverCamConfig config = new ObserverCamConfig();
+        config.pictureInPictureOpacity = 0.01;
+
+        config.cameraSettings();
+        assertEquals(0.25, config.pictureInPictureOpacity);
+
+        config.pictureInPictureOpacity = 4.0;
+        config.cameraSettings();
+        assertEquals(1.0, config.pictureInPictureOpacity);
     }
 }

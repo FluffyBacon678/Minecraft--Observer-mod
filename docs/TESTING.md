@@ -47,6 +47,7 @@ The next useful step is a real gameplay pass with the freshly built jar. Begin w
 4. Hide Minecraft's HUD and confirm the PiP hides with it. Show the HUD and confirm it returns.
 5. Disable PiP and confirm its texture disappears immediately. Rejoin the world and confirm the saved preference is respected.
 6. Test once with shaders at the recommended Balanced/5 FPS setting; leave PiP disabled if the extra world-render cost is too high.
+7. Set **PiP opacity** to 25%, 50%, and 100%. Confirm the live image, status header, text, and one-pixel frame fade together, remain correctly oriented, and other HUD elements keep their normal opacity.
 
 ## Recording checks
 
