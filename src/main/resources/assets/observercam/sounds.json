@@ -1,0 +1,20 @@
+{
+  "switch_on": {
+    "sounds": [
+      "observercam:switch_on"
+    ]
+  },
+  "switch_off": {
+    "sounds": [
+      "observercam:switch_off"
+    ]
+  },
+  "cake_is_a_lie": {
+    "sounds": [
+      {
+        "name": "observercam:cake_is_a_lie",
+        "stream": true
+      }
+    ]
+  }
+}

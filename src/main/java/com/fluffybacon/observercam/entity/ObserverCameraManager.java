@@ -6,6 +6,7 @@ import com.fluffybacon.observercam.config.ObserverCamConfig.CameraSettings;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.phys.Vec3;
 import org.jspecify.annotations.Nullable;
 
@@ -36,7 +37,10 @@ public final class ObserverCameraManager {
         Vec3 start = player.position().add(0.0, 2.0, 0.0).subtract(player.getLookAngle().scale(8.0));
         observer.snapTo(start);
         observer.setYRot(player.getYRot());
-        level.addFreshEntity(observer);
+        if (level.addFreshEntity(observer)) {
+            level.playSound(null, observer, ObserverCam.SWITCH_ON_SOUND,
+                    SoundSource.NEUTRAL, 0.8F, 1.0F);
+        }
         return observer;
     }
 
@@ -111,7 +115,7 @@ public final class ObserverCameraManager {
     }
 
     public static int disableFor(ServerPlayer player) {
-        return disableFor(player.level().getServer(), player.getUUID());
+        return disableFor(player.level().getServer(), player.getUUID(), true);
     }
 
     public static void pulseFor(ServerPlayer player) {
@@ -122,9 +126,26 @@ public final class ObserverCameraManager {
     }
 
     public static int disableFor(MinecraftServer server, UUID ownerUuid) {
+        return disableFor(server, ownerUuid, false);
+    }
+
+    private static int disableFor(MinecraftServer server, UUID ownerUuid, boolean playSound) {
         List<ObserverCameraEntity> owned = findAllOwnedBy(server, ownerUuid);
+        if (playSound && !owned.isEmpty()) {
+            ObserverCameraEntity observer = owned.getFirst();
+            observer.level().playSound(null, observer, ObserverCam.SWITCH_OFF_SOUND,
+                    SoundSource.NEUTRAL, 0.8F, 1.0F);
+        }
         owned.forEach(ObserverCameraEntity::discard);
         return owned.size();
+    }
+
+    public static void celebrateCake(ServerPlayer player) {
+        ObserverCameraEntity observer = findFor(player);
+        if (observer != null && observer.startCakeDance()) {
+            observer.level().playSound(null, observer, ObserverCam.CAKE_IS_A_LIE_SOUND,
+                    SoundSource.RECORDS, 0.9F, 1.0F);
+        }
     }
 
     public static @Nullable ObserverCameraEntity findFor(MinecraftServer server, UUID ownerUuid) {

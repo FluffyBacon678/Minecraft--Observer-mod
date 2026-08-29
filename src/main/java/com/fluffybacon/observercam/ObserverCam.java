@@ -1,5 +1,6 @@
 package com.fluffybacon.observercam;
 
+import com.fluffybacon.observercam.celebration.ObserverCelebrations;
 import com.fluffybacon.observercam.command.ObserverCamCommands;
 import com.fluffybacon.observercam.config.ObserverCamConfig;
 import com.fluffybacon.observercam.entity.ObserverCameraEntity;
@@ -21,6 +22,7 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.network.chat.Component;
+import net.minecraft.sounds.SoundEvent;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
 
@@ -28,6 +30,9 @@ public final class ObserverCam implements ModInitializer {
     public static final String MOD_ID = "observercam";
     private static final Identifier ENTITY_ID = Identifier.fromNamespaceAndPath(MOD_ID, "observer_camera");
     private static final ResourceKey<EntityType<?>> ENTITY_KEY = ResourceKey.create(Registries.ENTITY_TYPE, ENTITY_ID);
+    public static final SoundEvent SWITCH_ON_SOUND = registerSound("switch_on");
+    public static final SoundEvent SWITCH_OFF_SOUND = registerSound("switch_off");
+    public static final SoundEvent CAKE_IS_A_LIE_SOUND = registerSound("cake_is_a_lie");
 
     public static final EntityType<ObserverCameraEntity> OBSERVER_CAMERA = Registry.register(
             BuiltInRegistries.ENTITY_TYPE,
@@ -45,6 +50,7 @@ public final class ObserverCam implements ModInitializer {
     @Override
     public void onInitialize() {
         ObserverCamConfig.load();
+        ObserverCelebrations.register();
         PayloadTypeRegistry.playS2C().register(ToggleViewPayload.TYPE, ToggleViewPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(RestoreViewPayload.TYPE, RestoreViewPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(SetCameramanEnabledPayload.TYPE, SetCameramanEnabledPayload.CODEC);
@@ -70,5 +76,11 @@ public final class ObserverCam implements ModInitializer {
         });
         ServerLifecycleEvents.SERVER_STOPPED.register(ObserverCameraManager::clearCameraSettings);
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> ObserverCamCommands.register(dispatcher));
+    }
+
+    private static SoundEvent registerSound(String path) {
+        Identifier identifier = Identifier.fromNamespaceAndPath(MOD_ID, path);
+        return Registry.register(BuiltInRegistries.SOUND_EVENT, identifier,
+                SoundEvent.createVariableRangeEvent(identifier));
     }
 }

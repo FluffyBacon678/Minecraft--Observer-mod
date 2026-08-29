@@ -1,6 +1,7 @@
 package com.fluffybacon.observercam.client.recording;
 
 import com.fluffybacon.observercam.client.ObserverCamClient;
+import com.fluffybacon.observercam.client.ObserverClientSounds;
 import com.fluffybacon.observercam.client.ObserverPovController;
 import com.fluffybacon.observercam.client.ObserverActivationPulse;
 import com.fluffybacon.observercam.config.ObserverCamConfig;
@@ -138,6 +139,7 @@ public final class ObserverRecordingManager {
 
             beginSession(false);
             state.set(RecordingState.RECORDING);
+            ObserverClientSounds.playRecordingSwitch(client, true);
             updateObserverLight();
             toast(client, Component.translatable("observercam.recording.started.title"),
                     Component.translatable("observercam.recording.started.body", framesPerSecond,
@@ -287,6 +289,7 @@ public final class ObserverRecordingManager {
         }
         invalidateCaptureSession();
         stoppedElapsedNanos = Math.max(0L, System.nanoTime() - startNanos);
+        ObserverClientSounds.playRecordingSwitch(client, false);
         updateObserverLight();
         status(client, Component.translatable("observercam.recording.status.stopped",
                 formatDuration(stoppedElapsedNanos)));

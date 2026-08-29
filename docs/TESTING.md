@@ -54,6 +54,15 @@ The next useful step is a real gameplay pass with the freshly built jar. Begin w
 8. Set **PiP opacity** to 25%, 50%, and 100%. Confirm the live image and selected frame style fade together, remain correctly oriented, and other HUD elements keep their normal opacity.
 9. Cycle **PiP window size** through Small, Medium, and Big. Confirm the aspect ratio remains correct and Big matches the previous PiP image size.
 
+## Sound and celebration checks
+
+1. Toggle **Cameraman enabled** On and Off once. Confirm one switch-on sound follows the successful spawn and one switch-off sound follows the explicit dismissal. Repeatedly selecting the already-active state, reconnecting cleanup, and failed requests must not create duplicate sounds.
+2. Start a valid recording and wait for the LIVE state, then stop it. Confirm one local switch-on and one switch-off sound play. A failed recording start must not play the switch-on sound.
+3. Place a jukebox, insert a music disc, and move the Observer within three blocks. Confirm it begins bobbing, swaying, occasionally spinning, and shedding note particles within about half a second. Eject the disc and confirm dancing stops; a jukebox that merely contains a finished disc must not keep it dancing.
+4. Enter Observer POV while the physical Observer dances. Confirm the recorded/viewed camera remains stable because the dance is visual only.
+5. Reduce hunger, eat one slice from a normal cake, and confirm the Observer plays the cake sound once and dances for about 22 seconds. Click cake while unable to eat and confirm nothing triggers. Eat another slice during an active cake celebration and confirm the long sound does not overlap itself.
+6. In multiplayer with the mod installed on the server and clients, confirm nearby players see the same dance and particles. Recording switch feedback remains local to the recorder.
+
 ## Recording checks
 
 1. Bind **Start/stop Observer recording** under Observer Cam controls or use the Mod Menu button. From normal player view, start recording, wait for **Observer recording LIVE**, record normal movement for 20 seconds, then stop. Wait for the saved message before closing Minecraft.

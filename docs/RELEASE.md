@@ -19,6 +19,7 @@ Run these against the exact jar intended for release and record the result below
 
 - [ ] Core camera/POV pass in open terrain, interiors, forest, cave, water, teleports, portals, and deliberately blocked routes.
 - [ ] PiP enable/disable, HUD hiding, full-POV hiding, reconnect, and one shader-heavy scene.
+- [ ] Jukebox/cake celebrations and all three custom sounds pass the hands-on checks; distribution rights for every asset listed in [`AUDIO_ASSETS.md`](AUDIO_ASSETS.md) are documented before publishing.
 - [ ] One 60-second 1080p/30 recording with correct duration, seeking, frame pacing, and playback outside Minecraft.
 - [ ] Clean MP4, MKV, and WebM recordings plus a retained-history instant-replay save in each format.
 - [ ] Recording failure paths: missing FFmpeg, resize, disconnect, forced encoder exit, nearly full configured cap, and low free disk.

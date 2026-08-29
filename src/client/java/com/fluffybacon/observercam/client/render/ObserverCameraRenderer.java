@@ -25,10 +25,22 @@ public final class ObserverCameraRenderer extends EntityRenderer<ObserverCameraE
     @Override
     public void submit(ObserverCameraRenderState state, PoseStack poseStack, SubmitNodeCollector collector, CameraRenderState cameraState) {
         if (state.block.blockState.getRenderShape() == RenderShape.MODEL) {
+            float spin = 0.0F;
+            float sway = 0.0F;
+            float nod = 0.0F;
+            double bob = 0.0;
+            if (state.dancing) {
+                float spinCycle = state.danceTime % 55.0F;
+                spin = spinCycle < 15.0F ? spinCycle / 15.0F * 360.0F : 0.0F;
+                sway = (float) Math.sin(state.danceTime * 0.55F) * 9.0F;
+                nod = (float) Math.sin(state.danceTime * 0.38F) * 5.0F;
+                bob = Math.sin(state.danceTime * 0.48F) * 0.08;
+            }
             poseStack.pushPose();
-            poseStack.translate(0.0, 0.5, 0.0);
-            poseStack.mulPose(Axis.YP.rotationDegrees(-state.yaw));
-            poseStack.mulPose(Axis.XP.rotationDegrees(state.pitch));
+            poseStack.translate(0.0, 0.5 + bob, 0.0);
+            poseStack.mulPose(Axis.YP.rotationDegrees(-state.yaw + spin));
+            poseStack.mulPose(Axis.XP.rotationDegrees(state.pitch + nod));
+            poseStack.mulPose(Axis.ZP.rotationDegrees(sway));
             poseStack.translate(-0.5, -0.5, -0.5);
             collector.submitMovingBlock(poseStack, state.block);
             poseStack.popPose();
@@ -53,6 +65,8 @@ public final class ObserverCameraRenderer extends EntityRenderer<ObserverCameraE
         state.block.level = entity.level();
         state.yaw = entity.getYRot(partialTick);
         state.pitch = entity.getXRot(partialTick);
+        state.dancing = entity.isDancing();
+        state.danceTime = entity.tickCount + partialTick;
         Component bubble = ObserverAssistant.bubbleFor(entity, state.distanceToCameraSq);
         if (bubble != null) {
             state.nameTag = bubble;
