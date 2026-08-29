@@ -1,5 +1,6 @@
 package com.fluffybacon.observercam.client.render;
 
+import com.fluffybacon.observercam.client.assistant.ObserverAssistant;
 import com.fluffybacon.observercam.entity.ObserverCameraEntity;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
@@ -8,6 +9,8 @@ import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.state.CameraRenderState;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.EntityAttachment;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.ObserverBlock;
 import net.minecraft.world.level.block.RenderShape;
@@ -50,5 +53,14 @@ public final class ObserverCameraRenderer extends EntityRenderer<ObserverCameraE
         state.block.level = entity.level();
         state.yaw = entity.getYRot(partialTick);
         state.pitch = entity.getXRot(partialTick);
+        Component bubble = ObserverAssistant.bubbleFor(entity, state.distanceToCameraSq);
+        if (bubble != null) {
+            state.nameTag = bubble;
+            state.nameTagAttachment = entity.getAttachments()
+                    .getNullable(EntityAttachment.NAME_TAG, 0, entity.getYRot(partialTick));
+            // A speech caption should be occluded by walls rather than rendered
+            // through them like a normal always-visible player name tag.
+            state.isDiscrete = true;
+        }
     }
 }

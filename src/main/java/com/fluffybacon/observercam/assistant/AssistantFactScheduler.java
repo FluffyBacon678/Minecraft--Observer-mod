@@ -9,6 +9,7 @@ public final class AssistantFactScheduler {
     public static final double DEFAULT_INTERVAL_MINUTES = 3.0;
 
     private long nextFactNanos = Long.MIN_VALUE;
+    private long pausedAtNanos = Long.MIN_VALUE;
     private double scheduledIntervalMinutes = Double.NaN;
 
     /**
@@ -17,6 +18,16 @@ public final class AssistantFactScheduler {
      * produces an immediate unsolicited message.
      */
     public boolean shouldSpeak(long nowNanos, boolean eligible, double configuredIntervalMinutes) {
+        return shouldSpeak(nowNanos, eligible, true, configuredIntervalMinutes);
+    }
+
+    /**
+     * Advances the schedule only while gameplay is active. Inactive time is
+     * shifted out of the deadline instead of causing a fact immediately after
+     * a menu closes.
+     */
+    public boolean shouldSpeak(long nowNanos, boolean eligible, boolean active,
+                               double configuredIntervalMinutes) {
         if (!eligible) {
             reset();
             return false;
@@ -27,7 +38,18 @@ public final class AssistantFactScheduler {
                 || Double.compare(intervalMinutes, scheduledIntervalMinutes) != 0) {
             scheduledIntervalMinutes = intervalMinutes;
             nextFactNanos = nowNanos + intervalNanos(intervalMinutes);
+            pausedAtNanos = active ? Long.MIN_VALUE : nowNanos;
             return false;
+        }
+        if (!active) {
+            if (pausedAtNanos == Long.MIN_VALUE) {
+                pausedAtNanos = nowNanos;
+            }
+            return false;
+        }
+        if (pausedAtNanos != Long.MIN_VALUE) {
+            nextFactNanos += nowNanos - pausedAtNanos;
+            pausedAtNanos = Long.MIN_VALUE;
         }
         if (nowNanos - nextFactNanos < 0L) {
             return false;
@@ -39,6 +61,7 @@ public final class AssistantFactScheduler {
 
     public void reset() {
         nextFactNanos = Long.MIN_VALUE;
+        pausedAtNanos = Long.MIN_VALUE;
         scheduledIntervalMinutes = Double.NaN;
     }
 

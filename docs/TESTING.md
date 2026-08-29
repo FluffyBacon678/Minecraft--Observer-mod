@@ -34,10 +34,13 @@ The next useful step is a real gameplay pass with the freshly built jar. Begin w
 
 1. Confirm **Assistant → Talkative assistant** is Off after Reset Defaults and no assistant chat appears.
 2. Turn it On, leave **Say cool facts** On, set **Fact interval** to one minute, and return to active gameplay with your Observer present.
-3. Confirm no message appears immediately. After roughly one active minute, one `[Observer]` fact should appear only in your local chat.
-4. Open a menu when the next fact is due. Confirm it waits until gameplay resumes rather than speaking over the menu.
-5. Turn **Say cool facts** Off and wait another interval; no new fact should appear. Re-enable it and confirm a fresh full interval begins.
-6. On multiplayer, confirm other players do not receive the message and their assistant settings remain independent.
+3. Use **Preview assistant fact** to test the current speech-bubble, chat, and voice choices immediately; confirm it does not cause a second automatic fact or reset the scheduled interval.
+4. Confirm no scheduled message appears immediately. After roughly one active minute, a short caption should appear above your own Observer for eight seconds and the full fact should appear only in local chat.
+5. Walk behind a wall, farther than 32 blocks, enter Observer POV, hide the HUD, and open a menu. Confirm the caption is hidden in each case and never appears in PiP or recorded auxiliary footage.
+6. Keep a menu open longer than the remaining interval. Confirm the active-time countdown resumes where it paused rather than speaking immediately after the menu closes.
+7. Enable **Read facts aloud**. Confirm exactly one non-spatial voice reads the full fact at the Minecraft Voice volume; if the narrator is unavailable, confirm one warning appears and the visual outputs continue.
+8. Turn **Say cool facts** Off and wait another interval; no new fact should appear. Re-enable it and confirm a fresh full interval begins.
+9. On multiplayer, confirm other players neither see nor hear the caption/message and their assistant settings remain independent.
 
 ## Picture-in-picture checks
 

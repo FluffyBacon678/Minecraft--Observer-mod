@@ -52,4 +52,17 @@ class AssistantFactSchedulerTest {
         assertFalse(scheduler.shouldSpeak(minute * 2L - 1L, true, 1.0));
         assertTrue(scheduler.shouldSpeak(minute * 2L, true, 1.0));
     }
+
+    @Test
+    void menuTimeDoesNotAdvanceTheActiveGameplayCountdown() {
+        AssistantFactScheduler scheduler = new AssistantFactScheduler();
+        long minute = TimeUnit.MINUTES.toNanos(1L);
+
+        assertFalse(scheduler.shouldSpeak(0L, true, true, 1.0));
+        assertFalse(scheduler.shouldSpeak(minute / 2L, true, false, 1.0));
+        assertFalse(scheduler.shouldSpeak(minute * 3L / 2L, true, false, 1.0));
+        assertFalse(scheduler.shouldSpeak(minute * 3L / 2L, true, true, 1.0));
+        assertFalse(scheduler.shouldSpeak(minute * 2L - 1L, true, true, 1.0));
+        assertTrue(scheduler.shouldSpeak(minute * 2L, true, true, 1.0));
+    }
 }

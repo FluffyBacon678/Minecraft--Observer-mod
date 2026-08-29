@@ -56,6 +56,9 @@ public final class ObserverCamConfig {
 
     public boolean assistantEnabled = false;
     public boolean assistantFactsEnabled = true;
+    public boolean assistantSpeechBubbleEnabled = true;
+    public boolean assistantShowFactsInChat = true;
+    public boolean assistantReadFactsAloud = false;
     public double assistantFactIntervalMinutes = AssistantFactScheduler.DEFAULT_INTERVAL_MINUTES;
 
     public double recordingStorageLimitGb = 3.0;

@@ -1,6 +1,7 @@
 package com.fluffybacon.observercam.client;
 
 import com.fluffybacon.observercam.assistant.AssistantFactScheduler;
+import com.fluffybacon.observercam.client.assistant.ObserverAssistant;
 import com.fluffybacon.observercam.config.ObserverCamConfig;
 import com.fluffybacon.observercam.client.recording.ObserverRecordingManager;
 import com.fluffybacon.observercam.client.recording.RecordingState;
@@ -311,6 +312,14 @@ public final class ObserverCamConfigScreen extends Screen {
                         bool("assistant_enabled", () -> c.assistantEnabled, v -> c.assistantEnabled = v),
                         bool("assistant_facts_enabled", () -> c.assistantFactsEnabled,
                                 v -> c.assistantFactsEnabled = v),
+                        bool("assistant_speech_bubble", () -> c.assistantSpeechBubbleEnabled,
+                                v -> c.assistantSpeechBubbleEnabled = v),
+                        bool("assistant_show_in_chat", () -> c.assistantShowFactsInChat,
+                                v -> c.assistantShowFactsInChat = v),
+                        bool("assistant_read_aloud", () -> c.assistantReadFactsAloud,
+                                v -> c.assistantReadFactsAloud = v),
+                        action("assistant_preview", () -> ObserverAssistant.preview(
+                                net.minecraft.client.Minecraft.getInstance())),
                         number("assistant_fact_interval", "minutes",
                                 AssistantFactScheduler.MINIMUM_INTERVAL_MINUTES,
                                 AssistantFactScheduler.MAXIMUM_INTERVAL_MINUTES,

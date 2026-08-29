@@ -86,6 +86,9 @@ class ObserverCamConfigTest {
 
         assertFalse(config.assistantEnabled);
         assertTrue(config.assistantFactsEnabled);
+        assertTrue(config.assistantSpeechBubbleEnabled);
+        assertTrue(config.assistantShowFactsInChat);
+        assertFalse(config.assistantReadFactsAloud);
         assertEquals(AssistantFactScheduler.DEFAULT_INTERVAL_MINUTES,
                 config.assistantFactIntervalMinutes);
 
@@ -159,6 +162,9 @@ class ObserverCamConfigTest {
     void olderConfigurationsKeepTheOriginalBigPictureInPictureSize() {
         ObserverCamConfig migrated = new Gson().fromJson("{}", ObserverCamConfig.class);
         assertEquals(PictureInPictureSize.BIG, migrated.pictureInPictureSize);
+        assertTrue(migrated.assistantSpeechBubbleEnabled);
+        assertTrue(migrated.assistantShowFactsInChat);
+        assertFalse(migrated.assistantReadFactsAloud);
 
         migrated.pictureInPictureSize = null;
         migrated.cameraSettings();
