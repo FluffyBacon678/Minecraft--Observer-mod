@@ -5,6 +5,7 @@ import com.fluffybacon.observercam.command.ObserverCamCommands;
 import com.fluffybacon.observercam.config.ObserverCamConfig;
 import com.fluffybacon.observercam.entity.ObserverCameraEntity;
 import com.fluffybacon.observercam.entity.ObserverCameraManager;
+import com.fluffybacon.observercam.network.ObserverSwitchSoundPayload;
 import com.fluffybacon.observercam.network.RestoreViewPayload;
 import com.fluffybacon.observercam.network.SetCameramanEnabledPayload;
 import com.fluffybacon.observercam.network.PulseObserverPayload;
@@ -53,6 +54,7 @@ public final class ObserverCam implements ModInitializer {
         ObserverCelebrations.register();
         PayloadTypeRegistry.playS2C().register(ToggleViewPayload.TYPE, ToggleViewPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(RestoreViewPayload.TYPE, RestoreViewPayload.CODEC);
+        PayloadTypeRegistry.playS2C().register(ObserverSwitchSoundPayload.TYPE, ObserverSwitchSoundPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(SetCameramanEnabledPayload.TYPE, SetCameramanEnabledPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(PulseObserverPayload.TYPE, PulseObserverPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(SyncCameraSettingsPayload.TYPE, SyncCameraSettingsPayload.CODEC);

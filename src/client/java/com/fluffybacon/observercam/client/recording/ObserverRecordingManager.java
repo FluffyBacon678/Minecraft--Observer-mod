@@ -139,7 +139,7 @@ public final class ObserverRecordingManager {
 
             beginSession(false);
             state.set(RecordingState.RECORDING);
-            ObserverClientSounds.playRecordingSwitch(client, true);
+            ObserverClientSounds.playSwitch(client, true);
             updateObserverLight();
             toast(client, Component.translatable("observercam.recording.started.title"),
                     Component.translatable("observercam.recording.started.body", framesPerSecond,
@@ -289,7 +289,7 @@ public final class ObserverRecordingManager {
         }
         invalidateCaptureSession();
         stoppedElapsedNanos = Math.max(0L, System.nanoTime() - startNanos);
-        ObserverClientSounds.playRecordingSwitch(client, false);
+        ObserverClientSounds.playSwitch(client, false);
         updateObserverLight();
         status(client, Component.translatable("observercam.recording.status.stopped",
                 formatDuration(stoppedElapsedNanos)));

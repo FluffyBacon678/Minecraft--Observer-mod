@@ -3,6 +3,8 @@ package com.fluffybacon.observercam.entity;
 import com.fluffybacon.observercam.ObserverCam;
 import com.fluffybacon.observercam.config.ObserverCamConfig;
 import com.fluffybacon.observercam.config.ObserverCamConfig.CameraSettings;
+import com.fluffybacon.observercam.network.ObserverSwitchSoundPayload;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -38,8 +40,7 @@ public final class ObserverCameraManager {
         observer.snapTo(start);
         observer.setYRot(player.getYRot());
         if (level.addFreshEntity(observer)) {
-            level.playSound(null, observer, ObserverCam.SWITCH_ON_SOUND,
-                    SoundSource.NEUTRAL, 0.8F, 1.0F);
+            ServerPlayNetworking.send(player, new ObserverSwitchSoundPayload(true));
         }
         return observer;
     }
@@ -115,7 +116,11 @@ public final class ObserverCameraManager {
     }
 
     public static int disableFor(ServerPlayer player) {
-        return disableFor(player.level().getServer(), player.getUUID(), true);
+        int removed = disableFor(player.level().getServer(), player.getUUID());
+        if (removed > 0) {
+            ServerPlayNetworking.send(player, new ObserverSwitchSoundPayload(false));
+        }
+        return removed;
     }
 
     public static void pulseFor(ServerPlayer player) {
@@ -126,16 +131,7 @@ public final class ObserverCameraManager {
     }
 
     public static int disableFor(MinecraftServer server, UUID ownerUuid) {
-        return disableFor(server, ownerUuid, false);
-    }
-
-    private static int disableFor(MinecraftServer server, UUID ownerUuid, boolean playSound) {
         List<ObserverCameraEntity> owned = findAllOwnedBy(server, ownerUuid);
-        if (playSound && !owned.isEmpty()) {
-            ObserverCameraEntity observer = owned.getFirst();
-            observer.level().playSound(null, observer, ObserverCam.SWITCH_OFF_SOUND,
-                    SoundSource.NEUTRAL, 0.8F, 1.0F);
-        }
         owned.forEach(ObserverCameraEntity::discard);
         return owned.size();
     }

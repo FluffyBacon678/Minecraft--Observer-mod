@@ -6,6 +6,7 @@ import com.fluffybacon.observercam.client.render.ObserverCameraRenderer;
 import com.fluffybacon.observercam.client.recording.ObserverRecordingHud;
 import com.fluffybacon.observercam.client.recording.ObserverRecordingManager;
 import com.fluffybacon.observercam.config.ObserverCamConfig;
+import com.fluffybacon.observercam.network.ObserverSwitchSoundPayload;
 import com.fluffybacon.observercam.network.RestoreViewPayload;
 import com.fluffybacon.observercam.network.SetCameramanEnabledPayload;
 import com.fluffybacon.observercam.network.SyncCameraSettingsPayload;
@@ -48,6 +49,8 @@ public final class ObserverCamClient implements ClientModInitializer {
 
         ClientPlayNetworking.registerGlobalReceiver(ToggleViewPayload.TYPE, (payload, context) -> POV.toggle(context.client()));
         ClientPlayNetworking.registerGlobalReceiver(RestoreViewPayload.TYPE, (payload, context) -> POV.restore(context.client()));
+        ClientPlayNetworking.registerGlobalReceiver(ObserverSwitchSoundPayload.TYPE, (payload, context) ->
+                ObserverClientSounds.playSwitch(context.client(), payload.enabled()));
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
             syncCameraSettings();
             sendCameramanEnabled(ObserverCamConfig.get().cameramanEnabled);

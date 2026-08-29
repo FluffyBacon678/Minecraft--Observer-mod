@@ -56,7 +56,7 @@ The next useful step is a real gameplay pass with the freshly built jar. Begin w
 
 ## Sound and celebration checks
 
-1. Toggle **Cameraman enabled** On and Off once. Confirm one switch-on sound follows the successful spawn and one switch-off sound follows the explicit dismissal. Repeatedly selecting the already-active state, reconnecting cleanup, and failed requests must not create duplicate sounds.
+1. Toggle **Cameraman enabled** On and Off once. Confirm one immediate, full-volume local switch-on sound follows the successful spawn and one switch-off sound follows the explicit dismissal. Repeatedly selecting the already-active state, reconnecting cleanup, and failed requests must not create duplicate sounds; another player must not hear your UI acknowledgement.
 2. Start a valid recording and wait for the LIVE state, then stop it. Confirm one local switch-on and one switch-off sound play. A failed recording start must not play the switch-on sound.
 3. Place a jukebox, insert a music disc, and move the Observer within three blocks. Confirm it begins bobbing, swaying, occasionally spinning, and shedding note particles within about half a second. Eject the disc and confirm dancing stops; a jukebox that merely contains a finished disc must not keep it dancing.
 4. Enter Observer POV while the physical Observer dances. Confirm the recorded/viewed camera remains stable because the dance is visual only.
