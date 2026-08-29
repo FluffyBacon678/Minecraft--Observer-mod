@@ -4,6 +4,7 @@ import com.fluffybacon.observercam.ObserverCam;
 import com.fluffybacon.observercam.camera.CameraDirector;
 import com.fluffybacon.observercam.camera.CameraState;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.SectionPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
@@ -15,6 +16,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.JukeboxBlockEntity;
+import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.material.PushReaction;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
@@ -27,7 +29,7 @@ public final class ObserverCameraEntity extends Entity {
     public static final int CAKE_DANCE_TICKS = 22 * 20;
     private static final int JUKEBOX_CHECK_INTERVAL_TICKS = 10;
     private static final int DANCE_PARTICLE_INTERVAL_TICKS = 8;
-    private static final int JUKEBOX_DANCE_RADIUS = 3;
+    private static final int JUKEBOX_DANCE_RADIUS = 6;
     private static final EntityDataAccessor<String> OWNER_UUID = SynchedEntityData.defineId(ObserverCameraEntity.class, EntityDataSerializers.STRING);
     private static final EntityDataAccessor<String> TARGET_UUID = SynchedEntityData.defineId(ObserverCameraEntity.class, EntityDataSerializers.STRING);
     private static final EntityDataAccessor<Boolean> FOLLOWING = SynchedEntityData.defineId(ObserverCameraEntity.class, EntityDataSerializers.BOOLEAN);
@@ -255,8 +257,14 @@ public final class ObserverCameraEntity extends Entity {
         BlockPos minimum = center.offset(-JUKEBOX_DANCE_RADIUS, -JUKEBOX_DANCE_RADIUS, -JUKEBOX_DANCE_RADIUS);
         BlockPos maximum = center.offset(JUKEBOX_DANCE_RADIUS, JUKEBOX_DANCE_RADIUS, JUKEBOX_DANCE_RADIUS);
         for (BlockPos jukeboxPosition : BlockPos.betweenClosed(minimum, maximum)) {
-            if (jukeboxPosition.closerToCenterThan(position(), JUKEBOX_DANCE_RADIUS)
-                    && level.getBlockEntity(jukeboxPosition) instanceof JukeboxBlockEntity jukebox
+            if (!jukeboxPosition.closerToCenterThan(position(), JUKEBOX_DANCE_RADIUS + 0.5D)) {
+                continue;
+            }
+            LevelChunk chunk = level.getChunkSource().getChunkNow(
+                    SectionPos.blockToSectionCoord(jukeboxPosition.getX()),
+                    SectionPos.blockToSectionCoord(jukeboxPosition.getZ()));
+            if (chunk != null
+                    && chunk.getBlockEntity(jukeboxPosition) instanceof JukeboxBlockEntity jukebox
                     && jukebox.getSongPlayer().isPlaying()) {
                 return true;
             }
