@@ -41,4 +41,15 @@ class AssistantFactSchedulerTest {
         assertEquals(AssistantFactScheduler.MAXIMUM_INTERVAL_MINUTES,
                 AssistantFactScheduler.sanitizeMinutes(20.0));
     }
+
+    @Test
+    void changingTheIntervalStartsANewFullCountdown() {
+        AssistantFactScheduler scheduler = new AssistantFactScheduler();
+        long minute = TimeUnit.MINUTES.toNanos(1L);
+
+        assertFalse(scheduler.shouldSpeak(0L, true, 5.0));
+        assertFalse(scheduler.shouldSpeak(minute, true, 1.0));
+        assertFalse(scheduler.shouldSpeak(minute * 2L - 1L, true, 1.0));
+        assertTrue(scheduler.shouldSpeak(minute * 2L, true, 1.0));
+    }
 }

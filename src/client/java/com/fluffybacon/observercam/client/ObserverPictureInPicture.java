@@ -6,6 +6,7 @@ import com.fluffybacon.observercam.client.recording.ObserverRecordingManager;
 import com.fluffybacon.observercam.config.ObserverCamConfig;
 import com.fluffybacon.observercam.entity.ObserverCameraEntity;
 import com.fluffybacon.observercam.recording.CaptureSize;
+import com.fluffybacon.observercam.recording.PictureInPictureSize;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.pipeline.TextureTarget;
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -26,6 +27,11 @@ import org.slf4j.LoggerFactory;
 public final class ObserverPictureInPicture {
     private static final Logger LOGGER = LoggerFactory.getLogger("ObserverCam/Feed");
     private static final Identifier TEXTURE_ID = Identifier.fromNamespaceAndPath(ObserverCam.MOD_ID, "pip/live");
+    private static final int SCREEN_MARGIN = 4;
+    private static final int FRAME_WIDTH = 1;
+    private static final int HEADER_HEIGHT = 11;
+    private static final String FULL_STATUS_KEY = "observercam.pip.status.full";
+    private static final String COMPACT_STATUS_KEY = "observercam.pip.status.compact";
 
     private static TextureTarget feedTarget;
     private static RenderTargetTexture feedTexture;
@@ -190,25 +196,28 @@ public final class ObserverPictureInPicture {
                 || client.options.hideGui) {
             return;
         }
-        int displayWidth = Math.max(96, Math.min(200, graphics.guiWidth() / 3));
-        int displayHeight = Math.max(54, Math.round(displayWidth * feedTarget.height / (float) feedTarget.width));
-        int x = 4;
-        int y = 4;
-        int frameWidth = 1;
-        int headerHeight = 11;
-        int opacity = opacityAlpha(ObserverCamConfig.get().pictureInPictureOpacity);
-        int imageX = x + frameWidth;
-        int imageY = y + frameWidth + headerHeight;
+        ObserverCamConfig config = ObserverCamConfig.get();
+        PictureInPictureSize windowSize = config.pictureInPictureSize == null
+                ? PictureInPictureSize.BIG : config.pictureInPictureSize;
+        int displayWidth = windowSize.displayWidth(graphics.guiWidth());
+        int displayHeight = Math.max(1, Math.round(displayWidth * feedTarget.height / (float) feedTarget.width));
+        int opacity = opacityAlpha(config.pictureInPictureOpacity);
+        int imageX = SCREEN_MARGIN + FRAME_WIDTH;
+        int imageY = SCREEN_MARGIN + FRAME_WIDTH + HEADER_HEIGHT;
 
-        graphics.fill(x, y,
-                x + displayWidth + frameWidth * 2,
-                y + displayHeight + headerHeight + frameWidth * 2,
+        graphics.fill(SCREEN_MARGIN, SCREEN_MARGIN,
+                SCREEN_MARGIN + displayWidth + FRAME_WIDTH * 2,
+                SCREEN_MARGIN + displayHeight + HEADER_HEIGHT + FRAME_WIDTH * 2,
                 withOpacity(0xD0080A0C, opacity));
-        graphics.fill(imageX, y + frameWidth,
+        graphics.fill(imageX, SCREEN_MARGIN + FRAME_WIDTH,
                 imageX + displayWidth, imageY,
                 withOpacity(0xD0182028, opacity));
-        graphics.fill(x + 4, y + 4, x + 7, y + 7, withOpacity(0xFFFF2020, opacity));
-        graphics.drawString(client.font, "OBSERVER  LIVE", x + 10, y + 2,
+        graphics.fill(SCREEN_MARGIN + 4, SCREEN_MARGIN + 4,
+                SCREEN_MARGIN + 7, SCREEN_MARGIN + 7, withOpacity(0xFFFF2020, opacity));
+        Component fullStatus = Component.translatable(FULL_STATUS_KEY);
+        Component statusLabel = client.font.width(fullStatus) + 12 <= displayWidth
+                ? fullStatus : Component.translatable(COMPACT_STATUS_KEY);
+        graphics.drawString(client.font, statusLabel, SCREEN_MARGIN + 10, SCREEN_MARGIN + 2,
                 withOpacity(0xFFFFFFFF, opacity), true);
         graphics.blit(RenderPipelines.GUI_TEXTURED, TEXTURE_ID,
                 imageX, imageY,

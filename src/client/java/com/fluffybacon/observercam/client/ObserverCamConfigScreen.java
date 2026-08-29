@@ -348,6 +348,10 @@ public final class ObserverCamConfigScreen extends Screen {
                 case PICTURE_IN_PICTURE -> List.of(
                         bool("picture_in_picture_enabled", () -> c.pictureInPictureEnabled,
                                 ObserverPictureInPicture::setEnabled),
+                        choice("picture_in_picture_size",
+                                () -> Component.translatable("observercam.config.pip_size."
+                                        + c.pictureInPictureSize.id()),
+                                () -> c.pictureInPictureSize = c.pictureInPictureSize.next(), false),
                         choice("picture_in_picture_resolution",
                                 () -> Component.translatable("observercam.config.pip_resolution."
                                         + c.pictureInPictureResolution.id()),

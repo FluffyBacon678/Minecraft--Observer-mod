@@ -10,7 +10,7 @@ This is a beta gate, not a promise that every future 1.21.x build is compatible.
 - Project ownership, source, issue, license, and homepage metadata is present in the jar.
 - Automated builds run the test suite on Java 21 under Linux and Windows.
 - The packaged icon is reduced to a sensible in-game size instead of contributing most of the jar.
-- Camera, config, recording, replay, storage-policy, FFmpeg-command, and PiP support code has automated coverage where it can be tested outside Minecraft.
+- Camera, config, recording, replay, storage-policy, FFmpeg-command, PiP sizing, and assistant timing support code has automated coverage where it can be tested outside Minecraft.
 - Config writes are crash-resistant and invalid numeric settings recover to defaults.
 
 ## Required before public upload
@@ -55,5 +55,5 @@ The project artwork has been supplied. Before upload, confirm that the selected 
 - ReplayMod or Flashback camera-pose integration.
 - Capability-probed hardware encoders.
 - Cross-platform game-audio loopback discovery without third-party drivers.
-- Configurable PiP placement, scale, and margin. PiP opacity is implemented for this release.
+- Configurable PiP placement and margin. PiP size presets and opacity are implemented for this release.
 - Broader Minecraft/Fabric API compatibility claims after separate testing.

@@ -4,9 +4,11 @@ import com.fluffybacon.observercam.assistant.AssistantFactScheduler;
 import com.fluffybacon.observercam.config.ObserverCamConfig.CameraSettings;
 import com.fluffybacon.observercam.recording.InstantReplayLimitMode;
 import com.fluffybacon.observercam.recording.PictureInPictureResolution;
-import com.fluffybacon.observercam.recording.RecordingVideoFormat;
+import com.fluffybacon.observercam.recording.PictureInPictureSize;
 import com.fluffybacon.observercam.recording.RecordingQuality;
 import com.fluffybacon.observercam.recording.RecordingResolution;
+import com.fluffybacon.observercam.recording.RecordingVideoFormat;
+import com.google.gson.Gson;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -67,6 +69,7 @@ class ObserverCamConfigTest {
         assertEquals(RecordingQuality.BALANCED, config.recordingQuality);
         assertEquals(30, config.recordingFrameRate);
         assertFalse(config.recordingIncludeHud);
+        assertEquals(PictureInPictureSize.BIG, config.pictureInPictureSize);
         assertEquals(PictureInPictureResolution.BALANCED, config.pictureInPictureResolution);
         assertEquals(5, config.pictureInPictureFrameRate);
         assertEquals(1.0, config.pictureInPictureOpacity);
@@ -121,6 +124,9 @@ class ObserverCamConfigTest {
         assertEquals(RecordingVideoFormat.MP4, RecordingVideoFormat.WEBM.next());
         assertEquals(InstantReplayLimitMode.SIZE, InstantReplayLimitMode.TIME.next());
         assertEquals(InstantReplayLimitMode.TIME, InstantReplayLimitMode.SIZE.next());
+        assertEquals(PictureInPictureSize.MEDIUM, PictureInPictureSize.SMALL.next());
+        assertEquals(PictureInPictureSize.BIG, PictureInPictureSize.MEDIUM.next());
+        assertEquals(PictureInPictureSize.SMALL, PictureInPictureSize.BIG.next());
         assertEquals(PictureInPictureResolution.BALANCED, PictureInPictureResolution.PERFORMANCE.next());
     }
 
@@ -147,5 +153,15 @@ class ObserverCamConfigTest {
         config.pictureInPictureOpacity = 4.0;
         config.cameraSettings();
         assertEquals(1.0, config.pictureInPictureOpacity);
+    }
+
+    @Test
+    void olderConfigurationsKeepTheOriginalBigPictureInPictureSize() {
+        ObserverCamConfig migrated = new Gson().fromJson("{}", ObserverCamConfig.class);
+        assertEquals(PictureInPictureSize.BIG, migrated.pictureInPictureSize);
+
+        migrated.pictureInPictureSize = null;
+        migrated.cameraSettings();
+        assertEquals(PictureInPictureSize.BIG, migrated.pictureInPictureSize);
     }
 }

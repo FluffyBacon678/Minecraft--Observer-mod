@@ -3,6 +3,7 @@ package com.fluffybacon.observercam.config;
 import com.fluffybacon.observercam.assistant.AssistantFactScheduler;
 import com.fluffybacon.observercam.recording.InstantReplayLimitMode;
 import com.fluffybacon.observercam.recording.PictureInPictureResolution;
+import com.fluffybacon.observercam.recording.PictureInPictureSize;
 import com.fluffybacon.observercam.recording.RecordingQuality;
 import com.fluffybacon.observercam.recording.RecordingResolution;
 import com.fluffybacon.observercam.recording.RecordingVideoFormat;
@@ -65,6 +66,7 @@ public final class ObserverCamConfig {
     public int recordingFrameRate = 30;
     public boolean recordingIncludeHud = false;
     public boolean pictureInPictureEnabled = false;
+    public PictureInPictureSize pictureInPictureSize = PictureInPictureSize.BIG;
     public PictureInPictureResolution pictureInPictureResolution = PictureInPictureResolution.BALANCED;
     public int pictureInPictureFrameRate = 5;
     public double pictureInPictureOpacity = 1.0;
@@ -252,6 +254,9 @@ public final class ObserverCamConfig {
         }
         if (pictureInPictureResolution == null) {
             pictureInPictureResolution = PictureInPictureResolution.BALANCED;
+        }
+        if (pictureInPictureSize == null) {
+            pictureInPictureSize = PictureInPictureSize.BIG;
         }
         if (recordingFfmpegPath == null || recordingFfmpegPath.isBlank()) {
             recordingFfmpegPath = "ffmpeg";
