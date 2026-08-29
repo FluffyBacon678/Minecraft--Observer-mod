@@ -1,6 +1,7 @@
 package com.fluffybacon.observercam.client.assistant;
 
 import com.fluffybacon.observercam.assistant.AssistantFactCatalog;
+import com.fluffybacon.observercam.assistant.AssistantCaptionTimer;
 import com.fluffybacon.observercam.assistant.AssistantFactScheduler;
 import com.fluffybacon.observercam.client.ObserverCamClient;
 import com.fluffybacon.observercam.client.ObserverPictureInPicture;
@@ -28,12 +29,12 @@ public final class ObserverAssistant {
     private static final long BUBBLE_DURATION_NANOS = TimeUnit.SECONDS.toNanos(8L);
     private static final SystemToast.SystemToastId NARRATOR_TOAST_ID = new SystemToast.SystemToastId(5_000L);
     private static final AssistantFactScheduler FACT_SCHEDULER = new AssistantFactScheduler();
+    private static final AssistantCaptionTimer BUBBLE_TIMER = new AssistantCaptionTimer();
     private static final AssistantFactCatalog FACTS = new AssistantFactCatalog();
     private static int observerCheckTicks;
     private static UUID observerUuid;
     private static UUID speakingObserverUuid;
     private static Component activeBubble;
-    private static long bubbleExpiresAtNanos = Long.MIN_VALUE;
     private static boolean narratorWarningShown;
 
     private ObserverAssistant() {
@@ -41,7 +42,9 @@ public final class ObserverAssistant {
 
     public static void tick(Minecraft client) {
         long nowNanos = System.nanoTime();
-        expireBubble(nowNanos);
+        if (activeBubble != null && !BUBBLE_TIMER.isActive(nowNanos, client != null && client.screen == null)) {
+            clearBubble();
+        }
         ObserverCamConfig config = ObserverCamConfig.get();
         boolean enabledInWorld = config.assistantEnabled
                 && config.assistantFactsEnabled
@@ -98,7 +101,7 @@ public final class ObserverAssistant {
         Component spokenFact = Component.translatable(fact.messageTranslationKey());
         speakingObserverUuid = sourceObserverUuid;
         activeBubble = bubble;
-        bubbleExpiresAtNanos = nowNanos + BUBBLE_DURATION_NANOS;
+        BUBBLE_TIMER.start(nowNanos, BUBBLE_DURATION_NANOS, client.screen == null);
 
         Component message = Component.literal("[").withStyle(ChatFormatting.DARK_GRAY)
                 .append(Component.translatable("observercam.assistant.name")
@@ -123,6 +126,10 @@ public final class ObserverAssistant {
     public static Component bubbleFor(ObserverCameraEntity observer, double distanceToCameraSquared) {
         Minecraft client = Minecraft.getInstance();
         ObserverCamConfig config = ObserverCamConfig.get();
+        if (activeBubble != null && !BUBBLE_TIMER.isActive(
+                System.nanoTime(), client != null && client.screen == null)) {
+            clearBubble();
+        }
         if (!config.assistantEnabled || !config.assistantFactsEnabled
                 || !config.assistantSpeechBubbleEnabled
                 || client == null || client.options.hideGui || client.screen != null
@@ -130,10 +137,6 @@ public final class ObserverAssistant {
                 || activeBubble == null || speakingObserverUuid == null
                 || !speakingObserverUuid.equals(observer.getUUID())
                 || distanceToCameraSquared > MAXIMUM_BUBBLE_DISTANCE_SQUARED) {
-            return null;
-        }
-        if (System.nanoTime() - bubbleExpiresAtNanos >= 0L) {
-            clearBubble();
             return null;
         }
         return activeBubble;
@@ -164,16 +167,10 @@ public final class ObserverAssistant {
                 Component.translatable("observercam.assistant.narrator_unavailable.message"));
     }
 
-    private static void expireBubble(long nowNanos) {
-        if (activeBubble != null && nowNanos - bubbleExpiresAtNanos >= 0L) {
-            clearBubble();
-        }
-    }
-
     private static void clearBubble() {
         speakingObserverUuid = null;
         activeBubble = null;
-        bubbleExpiresAtNanos = Long.MIN_VALUE;
+        BUBBLE_TIMER.reset();
     }
 
     public static void reset() {

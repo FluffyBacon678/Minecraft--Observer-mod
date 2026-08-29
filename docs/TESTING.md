@@ -34,7 +34,7 @@ The next useful step is a real gameplay pass with the freshly built jar. Begin w
 
 1. Confirm **Assistant → Talkative assistant** is Off after Reset Defaults and no assistant chat appears.
 2. Turn it On, leave **Say cool facts** On, set **Fact interval** to one minute, and return to active gameplay with your Observer present.
-3. Use **Preview assistant fact** to test the current speech-bubble, chat, and voice choices immediately; confirm it does not cause a second automatic fact or reset the scheduled interval.
+3. Use **Preview assistant fact** to test the current speech-bubble, chat, and voice choices immediately; leave Mod Menu at any pace and confirm the caption still receives its full eight active-gameplay seconds. Confirm preview does not cause a second automatic fact or reset the scheduled interval.
 4. Confirm no scheduled message appears immediately. After roughly one active minute, a short caption should appear above your own Observer for eight seconds and the full fact should appear only in local chat.
 5. Walk behind a wall, farther than 32 blocks, enter Observer POV, hide the HUD, and open a menu. Confirm the caption is hidden in each case and never appears in PiP or recorded auxiliary footage.
 6. Keep a menu open longer than the remaining interval. Confirm the active-time countdown resumes where it paused rather than speaking immediately after the menu closes.

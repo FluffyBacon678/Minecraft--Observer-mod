@@ -3,12 +3,48 @@ package com.fluffybacon.observercam.assistant;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
-/** Small translation-backed fact catalogue with no immediate repeats. */
+/** Translation-backed fact catalogue with no immediate repeats. */
 public final class AssistantFactCatalog {
     private static final List<Fact> FACTS = List.of(
             fact("octopus"),
             fact("wombat"),
-            fact("cloud")
+            fact("cloud"),
+            fact("banana"),
+            fact("honey"),
+            fact("butterfly"),
+            fact("flamingo"),
+            fact("dolphin"),
+            fact("horse"),
+            fact("axolotl"),
+            fact("jellyfish"),
+            fact("wood_frog"),
+            fact("penguin"),
+            fact("snail"),
+            fact("seahorse"),
+            fact("woodpecker"),
+            fact("polar_bear"),
+            fact("blue_whale"),
+            fact("fungus_ants"),
+            fact("honeybee"),
+            fact("cockroach"),
+            fact("elephant"),
+            fact("ballooning_spider"),
+            fact("cattle"),
+            fact("giraffe"),
+            fact("shrimp"),
+            fact("owl"),
+            fact("sea_star"),
+            fact("crow"),
+            fact("horned_lizard"),
+            fact("platypus_uv"),
+            fact("platypus_stomach"),
+            fact("flying_snake"),
+            fact("mantis_shrimp"),
+            fact("lobster"),
+            fact("crocodile"),
+            fact("frigatebird"),
+            fact("ant_lungs"),
+            fact("lightning")
     );
 
     private int previousIndex = -1;
