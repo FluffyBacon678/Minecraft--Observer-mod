@@ -2,6 +2,35 @@
 
 All notable user-facing changes to Observer Cam are recorded here.
 
+## 1.0.0 — 2026-08-29
+
+### Added
+
+- Background Observer recording while the player continues using the normal player view, with configurable resolution, quality, format, and frame rate.
+- Resizable, configurable-opacity PiP with a compact headerless frame as the default.
+- Optional talkative-assistant facts shown above the Observer, with local chat and built-in narrator options.
+- Server-synchronized jukebox and cake dances, note particles, cake audio, and immediate Observer/recording switch sounds.
+
+### Changed
+
+- Expanded active-jukebox dance detection to 17 blocks so a roaming Observer reacts throughout the audible area.
+- Replaced block-by-block jukebox discovery with bounded inspection of loaded chunk block-entity maps; it never loads chunks.
+- Improved camera smoothing, documentary reframing, multi-subject composition, and line-of-sight recovery in tight tunnels.
+- Reorganized Mod Menu pages and added output-folder display/selection, **Open video folder**, PiP sizing, opacity, frame style, recording resolution, and FPS controls.
+- Left all Observer Cam action keys unbound on clean installs while keeping every action accessible through Mod Menu.
+
+### Fixed
+
+- Corrected upside-down auxiliary rendering, conservative disk-cap failures, recording duration padding, and background-capture performance.
+- Made switch feedback owner-only, immediate, silence-trimmed, and independent of Observer distance or the Neutral Creatures volume slider.
+- Kept dance motion render-only so Observer POV and recorded camera geometry remain stable.
+
+### Release notes
+
+- Requires Minecraft 1.21.11, Java 21, Fabric Loader 0.18.4 or newer, and Fabric API 0.141.2 or newer.
+- Mod Menu 17.0.0-beta.2 or newer is recommended but optional.
+- FFmpeg remains required only for video export; Observer movement, POV, PiP, assistant facts, and easter eggs work without it.
+
 ## 0.1.0-beta.1 — 2026-08-28
 
 ### Added

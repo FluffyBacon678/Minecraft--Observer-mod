@@ -1,6 +1,6 @@
 # Observer Cam release readiness
 
-Target: **0.1.0-beta.1+mc1.21.11** for Fabric on Minecraft 1.21.11.
+Target: **1.0.0+mc1.21.11** for Fabric on Minecraft 1.21.11.
 
 This is a beta gate, not a promise that every future 1.21.x build is compatible. Publish the remapped jar as the primary file; the sources jar is optional developer material.
 
@@ -39,7 +39,7 @@ The project artwork has been supplied. Before upload, confirm that the selected 
 1. Verify the version in `gradle.properties`, run `clean build`, and install only the resulting remapped jar for the final pass.
 2. Generate and save a SHA-256 checksum for that exact jar.
 3. Commit the completed acceptance log and release notes; confirm the GitHub build passes on Linux and Windows.
-4. Tag the accepted commit as `v0.1.0-beta.1` and create a GitHub prerelease containing the primary jar and checksum.
+4. Tag the accepted commit as `v1.0.0` and create a GitHub release containing the primary jar and checksum.
 5. On Modrinth, select Fabric, Minecraft 1.21.11, and client-and-server. Mark Fabric API required and Mod Menu optional; describe FFmpeg as required only for video export.
 6. Upload the same checksum-matched jar, include the known limitations, complete all required disclosures, and keep the version marked beta.
 

@@ -67,7 +67,7 @@ The **Recording** page chooses and opens the output folder, selects an FFmpeg ex
 
 **Talkative assistant** is off by default. When enabled, the player's own Observer can show one of 39 short, wall-occluded fact captions above itself and optionally copy the full fact to local chat or read it with Minecraft's bundled narrator voice. **Say cool facts** can be disabled independently, and **Fact interval** controls a one-to-five-minute active-gameplay delay that pauses in menus. Captions also pause while a menu is open, so a Mod Menu preview receives its full eight seconds after returning to the world. Speech is opt-in, non-spatial, uses the Voice volume slider, and requires no additional installation. Facts and settings are never sent to the server or other players.
 
-The Observer has a few visual and sound easter eggs. A real cameraman enable/disable and a successful recording start/stop use short switch sounds. While within six blocks of a playing jukebox, the Observer performs a render-only bob, sway, and occasional spin while emitting note particles. Eating a real cake slice starts the same dance for about 22 seconds and plays the bundled cake celebration once; failed cake clicks do nothing and repeated slices cannot stack the sound. Dance state and particles are server-owned so nearby multiplayer clients see the same celebration, while the camera transform and recorded viewpoint remain stable.
+The Observer has a few visual and sound easter eggs. A real cameraman enable/disable and a successful recording start/stop use short switch sounds. While within 17 blocks of a playing jukebox, the Observer performs a render-only bob, sway, and occasional spin while emitting note particles. Eating a real cake slice starts the same dance for about 22 seconds and plays the bundled cake celebration once; failed cake clicks do nothing and repeated slices cannot stack the sound. Dance state and particles are server-owned so nearby multiplayer clients see the same celebration, while the camera transform and recorded viewpoint remain stable.
 
 Game audio is optional and off by default. When Windows already provides a loopback source such as **Stereo Mix**, choose it under **Recording → Audio source**, then enable **Record audio**. Audio and video share one FFmpeg process and timeline; MP4/MKV use AAC and WebM uses Opus, including instant-replay segments. Observer Cam does not install an audio driver, replace Minecraft's OpenAL context, or show microphones in its game-audio picker. If Windows exposes no loopback source, recording remains video-only.
 
@@ -94,7 +94,7 @@ The debug HUD reports the current director state, distance, target, visibility, 
 .\gradlew.bat runClient
 ```
 
-The distributable jar is written to `build/libs/observercam-0.1.0-beta.1+mc1.21.11.jar`.
+The distributable jar is written to `build/libs/observercam-1.0.0+mc1.21.11.jar`.
 
 The supplied artwork is packaged as an optimized in-game/Mod Menu icon at `src/client/resources/assets/observercam/icon.png`. Before reusing any artwork on a public project page, confirm its distribution rights, provenance, and the host's current media policy.
 

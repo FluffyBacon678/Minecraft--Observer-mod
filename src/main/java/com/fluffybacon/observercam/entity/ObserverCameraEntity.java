@@ -15,6 +15,7 @@ import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.JukeboxBlockEntity;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.material.PushReaction;
@@ -29,7 +30,7 @@ public final class ObserverCameraEntity extends Entity {
     public static final int CAKE_DANCE_TICKS = 22 * 20;
     private static final int JUKEBOX_CHECK_INTERVAL_TICKS = 10;
     private static final int DANCE_PARTICLE_INTERVAL_TICKS = 8;
-    private static final int JUKEBOX_DANCE_RADIUS = 6;
+    private static final int JUKEBOX_DANCE_RADIUS = 17;
     private static final EntityDataAccessor<String> OWNER_UUID = SynchedEntityData.defineId(ObserverCameraEntity.class, EntityDataSerializers.STRING);
     private static final EntityDataAccessor<String> TARGET_UUID = SynchedEntityData.defineId(ObserverCameraEntity.class, EntityDataSerializers.STRING);
     private static final EntityDataAccessor<Boolean> FOLLOWING = SynchedEntityData.defineId(ObserverCameraEntity.class, EntityDataSerializers.BOOLEAN);
@@ -254,19 +255,24 @@ public final class ObserverCameraEntity extends Entity {
 
     private boolean hasPlayingJukeboxNearby(ServerLevel level) {
         BlockPos center = blockPosition();
-        BlockPos minimum = center.offset(-JUKEBOX_DANCE_RADIUS, -JUKEBOX_DANCE_RADIUS, -JUKEBOX_DANCE_RADIUS);
-        BlockPos maximum = center.offset(JUKEBOX_DANCE_RADIUS, JUKEBOX_DANCE_RADIUS, JUKEBOX_DANCE_RADIUS);
-        for (BlockPos jukeboxPosition : BlockPos.betweenClosed(minimum, maximum)) {
-            if (!jukeboxPosition.closerToCenterThan(position(), JUKEBOX_DANCE_RADIUS + 0.5D)) {
-                continue;
-            }
-            LevelChunk chunk = level.getChunkSource().getChunkNow(
-                    SectionPos.blockToSectionCoord(jukeboxPosition.getX()),
-                    SectionPos.blockToSectionCoord(jukeboxPosition.getZ()));
-            if (chunk != null
-                    && chunk.getBlockEntity(jukeboxPosition) instanceof JukeboxBlockEntity jukebox
-                    && jukebox.getSongPlayer().isPlaying()) {
-                return true;
+        int minimumChunkX = SectionPos.blockToSectionCoord(center.getX() - JUKEBOX_DANCE_RADIUS);
+        int maximumChunkX = SectionPos.blockToSectionCoord(center.getX() + JUKEBOX_DANCE_RADIUS);
+        int minimumChunkZ = SectionPos.blockToSectionCoord(center.getZ() - JUKEBOX_DANCE_RADIUS);
+        int maximumChunkZ = SectionPos.blockToSectionCoord(center.getZ() + JUKEBOX_DANCE_RADIUS);
+        for (int chunkX = minimumChunkX; chunkX <= maximumChunkX; chunkX++) {
+            for (int chunkZ = minimumChunkZ; chunkZ <= maximumChunkZ; chunkZ++) {
+                LevelChunk chunk = level.getChunkSource().getChunkNow(chunkX, chunkZ);
+                if (chunk == null) {
+                    continue;
+                }
+                for (BlockEntity blockEntity : chunk.getBlockEntities().values()) {
+                    if (blockEntity instanceof JukeboxBlockEntity jukebox
+                            && jukebox.getBlockPos().closerToCenterThan(
+                                    position(), JUKEBOX_DANCE_RADIUS + 0.5D)
+                            && jukebox.getSongPlayer().isPlaying()) {
+                        return true;
+                    }
+                }
             }
         }
         return false;
