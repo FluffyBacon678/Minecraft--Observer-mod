@@ -8,6 +8,7 @@ import com.fluffybacon.observercam.recording.RecordingQuality;
 import com.fluffybacon.observercam.recording.RecordingResolution;
 import com.fluffybacon.observercam.recording.ReplayBufferPolicy;
 import com.fluffybacon.observercam.recording.ReplayBufferFiles;
+import com.fluffybacon.observercam.recording.ReusableFrame;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -26,9 +27,9 @@ import java.util.concurrent.atomic.AtomicReference;
 
 final class ReplayBufferEncoder {
     private static final int QUEUE_CAPACITY = 3;
-    private static final byte[] END_OF_STREAM = new byte[0];
+    private static final ReusableFrame END_OF_STREAM = new ReusableFrame(new byte[0], () -> { });
 
-    private final BlockingQueue<byte[]> queue = new ArrayBlockingQueue<>(QUEUE_CAPACITY);
+    private final BlockingQueue<ReusableFrame> queue = new ArrayBlockingQueue<>(QUEUE_CAPACITY);
     private final AtomicBoolean accepting = new AtomicBoolean();
     private final AtomicLong acceptedFrames = new AtomicLong();
     private final AtomicLong writtenFrames = new AtomicLong();
@@ -114,11 +115,13 @@ final class ReplayBufferEncoder {
         }
     }
 
-    boolean submit(byte[] frame) {
+    boolean submit(ReusableFrame frame) {
         if (!accepting.get()) {
             return false;
         }
+        frame.retain();
         if (!queue.offer(frame)) {
+            frame.release();
             droppedFrames.incrementAndGet();
             return false;
         }
@@ -130,6 +133,7 @@ final class ReplayBufferEncoder {
         accepting.set(false);
         signalEndOfStream();
         joinWriter();
+        drainQueuedFrames();
         int exitCode = awaitProcess();
         Throwable failure = writerFailure.get();
         List<Path> segments;
@@ -156,6 +160,29 @@ final class ReplayBufferEncoder {
         }
         return new ReplaySnapshot(successful, sessionDirectory, segments, message,
                 acceptedFrames.get(), writtenFrames.get(), droppedFrames.get());
+    }
+
+    void abort() {
+        accepting.set(false);
+        drainQueuedFrames();
+        Process activeProcess = process;
+        if (activeProcess != null && activeProcess.isAlive()) {
+            activeProcess.destroyForcibly();
+        }
+        Thread activeWriter = writerThread;
+        if (activeWriter != null && activeWriter != Thread.currentThread()) {
+            activeWriter.interrupt();
+            try {
+                activeWriter.join(TimeUnit.SECONDS.toMillis(2L));
+            } catch (InterruptedException exception) {
+                Thread.currentThread().interrupt();
+            }
+        }
+        try {
+            deleteOwnedSession(sessionDirectory);
+        } catch (IOException exception) {
+            // Preserve a marked session if the OS still has a file handle open; stale cleanup handles it later.
+        }
     }
 
     boolean failedWhileBuffering() {
@@ -278,12 +305,16 @@ final class ReplayBufferEncoder {
     private void writeFrames() {
         try (OutputStream output = process.getOutputStream()) {
             while (true) {
-                byte[] frame = queue.take();
+                ReusableFrame frame = queue.take();
                 if (frame == END_OF_STREAM) {
                     break;
                 }
-                output.write(frame);
-                writtenFrames.incrementAndGet();
+                try {
+                    output.write(frame.bytes());
+                    writtenFrames.incrementAndGet();
+                } finally {
+                    frame.release();
+                }
             }
             output.flush();
         } catch (IOException exception) {
@@ -304,7 +335,7 @@ final class ReplayBufferEncoder {
                 if (process != null) {
                     process.destroyForcibly();
                 }
-                queue.clear();
+                drainQueuedFrames();
                 queue.offer(END_OF_STREAM);
             }
         } catch (InterruptedException exception) {
@@ -312,6 +343,15 @@ final class ReplayBufferEncoder {
             writerFailure.compareAndSet(null, exception);
             if (process != null) {
                 process.destroyForcibly();
+            }
+        }
+    }
+
+    private void drainQueuedFrames() {
+        ReusableFrame queued;
+        while ((queued = queue.poll()) != null) {
+            if (queued != END_OF_STREAM) {
+                queued.release();
             }
         }
     }

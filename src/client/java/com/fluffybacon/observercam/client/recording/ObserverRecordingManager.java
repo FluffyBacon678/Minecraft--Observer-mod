@@ -13,6 +13,7 @@ import com.fluffybacon.observercam.recording.RecordingStorageBudget;
 import com.fluffybacon.observercam.recording.RecordingQuality;
 import com.fluffybacon.observercam.recording.RecordingResolution;
 import com.fluffybacon.observercam.recording.RecordingVideoFormat;
+import com.fluffybacon.observercam.recording.ReusableFrame;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.toasts.SystemToast;
 import net.minecraft.network.chat.Component;
@@ -30,10 +31,10 @@ public final class ObserverRecordingManager {
     private static final Logger LOGGER = LoggerFactory.getLogger("ObserverCam/Recorder");
     private static final ObserverRecordingManager INSTANCE = new ObserverRecordingManager();
     private static final SystemToast.SystemToastId TOAST_ID = new SystemToast.SystemToastId(5_000L);
-    private static final long MINIMUM_START_BUDGET = 128_000_000L;
-    private static final long CAP_STOP_HEADROOM = 128_000_000L;
-    private static final long DISK_FREE_RESERVE = 128_000_000L;
-    private static final long STORAGE_CHECK_INTERVAL = TimeUnit.MILLISECONDS.toNanos(500L);
+    private static final long MINIMUM_START_BUDGET = 256_000_000L;
+    private static final long CAP_STOP_HEADROOM = 256_000_000L;
+    private static final long DISK_FREE_RESERVE = 256_000_000L;
+    private static final long STORAGE_CHECK_INTERVAL = TimeUnit.SECONDS.toNanos(2L);
     private static final long LIVE_FINALIZER_SHUTDOWN_SECONDS = 60L;
     private static final long REPLAY_FINALIZER_SHUTDOWN_SECONDS = 120L;
     private static final long INTERRUPTED_FINALIZER_GRACE_SECONDS = 5L;
@@ -129,9 +130,10 @@ public final class ObserverRecordingManager {
 
         ObserverCamConfig config = ObserverCamConfig.get();
         config.save();
+        FFmpegEncoder created = null;
         try {
             configureCapture(client, config);
-            FFmpegEncoder created = new FFmpegEncoder(activeExecutable, activeFormat,
+            created = new FFmpegEncoder(activeExecutable, activeFormat,
                     activeResolution, activeQuality, activeAudio, sourceWidth, sourceHeight,
                     framesPerSecond, outputDirectory);
             created.start();
@@ -152,6 +154,10 @@ public final class ObserverRecordingManager {
         } catch (IOException | RuntimeException exception) {
             state.set(RecordingState.IDLE);
             encoder = null;
+            invalidateCaptureSession();
+            if (created != null) {
+                created.abort();
+            }
             updateObserverLight();
             reportStartFailure(client, exception, false);
         }
@@ -249,7 +255,7 @@ public final class ObserverRecordingManager {
         return sourceHeight;
     }
 
-    public void submitFrame(long session, int width, int height, byte[] rgba) {
+    public void submitFrame(long session, int width, int height, ReusableFrame frame) {
         if (session != activeSession || (!isRecording() && !isReplayBuffering())) {
             return;
         }
@@ -269,9 +275,9 @@ public final class ObserverRecordingManager {
         ReplayBufferEncoder replay = replayEncoder;
         for (int index = 0; index < copies; index++) {
             if (isRecording() && live != null) {
-                live.submit(rgba);
+                live.submit(frame);
             } else if (isReplayBuffering() && replay != null) {
-                replay.submit(rgba);
+                replay.submit(frame);
             }
         }
     }
@@ -469,13 +475,14 @@ public final class ObserverRecordingManager {
             return;
         }
         config.save();
+        ReplayBufferEncoder created = null;
         try {
             configureCapture(client, config);
             if (!outputDirectory.equals(cleanedReplayOutput)) {
                 ReplayBufferEncoder.cleanupStaleBuffers(outputDirectory);
                 cleanedReplayOutput = outputDirectory;
             }
-            ReplayBufferEncoder created = new ReplayBufferEncoder(activeExecutable, activeFormat,
+            created = new ReplayBufferEncoder(activeExecutable, activeFormat,
                     activeResolution, activeQuality, activeAudio, sourceWidth, sourceHeight,
                     framesPerSecond, outputDirectory);
             created.start();
@@ -492,6 +499,10 @@ public final class ObserverRecordingManager {
                     sourceHeight, framesPerSecond, created.sessionDirectory());
         } catch (IOException | RuntimeException exception) {
             replayEncoder = null;
+            invalidateCaptureSession();
+            if (created != null) {
+                created.abort();
+            }
             replayState.set(ReplayState.IDLE);
             disableReplayAfterFailure(config);
             updateObserverLight();
@@ -654,6 +665,7 @@ public final class ObserverRecordingManager {
 
     private void invalidateCaptureSession() {
         activeSession = sessionSequence.incrementAndGet();
+        ObserverFrameCapture.dropCachedBuffers();
     }
 
     private void finalizeRecording(Minecraft client, FFmpegEncoder finishing) {
@@ -732,7 +744,7 @@ public final class ObserverRecordingManager {
         long remainingBudget = RecordingStorageBudget.remainingBytes(directory);
         long usableDisk = Files.getFileStore(directory).getUsableSpace();
         if (remainingBudget < MINIMUM_START_BUDGET) {
-            throw new IOException("Less than 128 MB remains under the configured recording cap");
+            throw new IOException("Less than 256 MB remains under the configured recording cap");
         }
         if (usableDisk < DISK_FREE_RESERVE + MINIMUM_START_BUDGET) {
             throw new IOException("The selected disk does not have enough free space");

@@ -29,7 +29,7 @@ FFmpeg is not needed for the cameraman, Observer POV, or PiP. Install or select 
 ## Commands and controls
 
 - `/observercam summon` — creates an Observer, targeting the executing player.
-- `/observercam target <player>` — assigns your Observer to film a selected player.
+- `/observercam target <player>` — assigns your Observer to film a selected player; targeting someone else requires game-master/operator permission.
 - `/observercam follow` — targets the executing player and starts following; summons an Observer if needed.
 - `/observercam dismiss` — removes your Observer.
 - `/observercam view` — toggles the executing player's Observer POV.

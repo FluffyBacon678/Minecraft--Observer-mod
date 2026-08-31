@@ -348,6 +348,7 @@
 
   "observercam.message.cameraman.enabled": "Observer cameraman enabled.",
   "observercam.message.cameraman.disabled": "Observer cameraman disabled.",
+  "observercam.message.cameraman.spawn_failed": "Observer cameraman could not be created. Try again after the area finishes loading.",
   "observercam.message.pov.enabled": "Observer POV enabled.",
   "observercam.message.pov.disabled": "Observer POV disabled.",
   "observercam.message.pov.cancelled": "Observer POV request cancelled.",

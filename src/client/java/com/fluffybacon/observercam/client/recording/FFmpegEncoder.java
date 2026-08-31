@@ -6,6 +6,7 @@ import com.fluffybacon.observercam.recording.RecordingQuality;
 import com.fluffybacon.observercam.recording.RecordingResolution;
 import com.fluffybacon.observercam.recording.RecordingTimeline;
 import com.fluffybacon.observercam.recording.RecordingVideoFormat;
+import com.fluffybacon.observercam.recording.ReusableFrame;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,10 +28,10 @@ import java.util.concurrent.atomic.AtomicReference;
 final class FFmpegEncoder {
     private static final Logger LOGGER = LoggerFactory.getLogger("ObserverCam/Recorder");
     private static final int QUEUE_CAPACITY = 3;
-    private static final byte[] END_OF_STREAM = new byte[0];
+    private static final ReusableFrame END_OF_STREAM = new ReusableFrame(new byte[0], () -> { });
     private static final DateTimeFormatter FILE_STAMP = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss-SSS");
 
-    private final BlockingQueue<byte[]> queue = new ArrayBlockingQueue<>(QUEUE_CAPACITY);
+    private final BlockingQueue<ReusableFrame> queue = new ArrayBlockingQueue<>(QUEUE_CAPACITY);
     private final AtomicBoolean accepting = new AtomicBoolean();
     private final AtomicLong acceptedFrames = new AtomicLong();
     private final AtomicLong writtenFrames = new AtomicLong();
@@ -51,7 +52,7 @@ final class FFmpegEncoder {
 
     private Process process;
     private Thread writerThread;
-    private byte[] lastFrame;
+    private ReusableFrame lastFrame;
 
     FFmpegEncoder(String executable, RecordingVideoFormat format, RecordingResolution resolution,
                   RecordingQuality quality, RecordingAudio audio, int width, int height,
@@ -105,12 +106,14 @@ final class FFmpegEncoder {
         }
     }
 
-    boolean submit(byte[] frame) {
+    boolean submit(ReusableFrame frame) {
         if (!accepting.get()) {
             return false;
         }
-        lastFrame = frame;
+        replaceLastFrame(frame);
+        frame.retain();
         if (!queue.offer(frame)) {
+            frame.release();
             droppedFrames.incrementAndGet();
             return false;
         }
@@ -123,6 +126,8 @@ final class FFmpegEncoder {
         padTimeline(expectedFrameCount);
         signalEndOfStream();
         joinWriter();
+        drainQueuedFrames();
+        releaseLastFrame();
         int exitCode = awaitProcess();
         Throwable failure = writerFailure.get();
         boolean successful = failure == null && exitCode == 0 && writtenFrames.get() > 0L;
@@ -152,8 +157,33 @@ final class FFmpegEncoder {
                 writtenFrames.get(), droppedFrames.get(), paddedFrames.get());
     }
 
+    void abort() {
+        accepting.set(false);
+        drainQueuedFrames();
+        releaseLastFrame();
+        Process activeProcess = process;
+        if (activeProcess != null && activeProcess.isAlive()) {
+            activeProcess.destroyForcibly();
+        }
+        Thread activeWriter = writerThread;
+        if (activeWriter != null && activeWriter != Thread.currentThread()) {
+            activeWriter.interrupt();
+            try {
+                activeWriter.join(TimeUnit.SECONDS.toMillis(2L));
+            } catch (InterruptedException exception) {
+                Thread.currentThread().interrupt();
+            }
+        }
+        try {
+            Files.deleteIfExists(partialFile);
+            Files.deleteIfExists(errorLog);
+        } catch (IOException exception) {
+            LOGGER.warn("Could not fully clean up a failed recording start", exception);
+        }
+    }
+
     private void padTimeline(long expectedFrameCount) {
-        byte[] frame = lastFrame;
+        ReusableFrame frame = lastFrame;
         int requested = RecordingTimeline.finalPaddingFrames(
                 expectedFrameCount, acceptedFrames.get(), framesPerSecond);
         if (frame == null || requested <= 0 || writerThread == null || !writerThread.isAlive()) {
@@ -162,14 +192,17 @@ final class FFmpegEncoder {
         long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(3L);
         int enqueued = 0;
         while (enqueued < requested && System.nanoTime() < deadline) {
+            frame.retain();
             try {
                 if (!queue.offer(frame, 100L, TimeUnit.MILLISECONDS)) {
+                    frame.release();
                     continue;
                 }
                 acceptedFrames.incrementAndGet();
                 paddedFrames.incrementAndGet();
                 enqueued++;
             } catch (InterruptedException exception) {
+                frame.release();
                 Thread.currentThread().interrupt();
                 break;
             }
@@ -203,12 +236,16 @@ final class FFmpegEncoder {
     private void writeFrames() {
         try (OutputStream output = process.getOutputStream()) {
             while (true) {
-                byte[] frame = queue.take();
+                ReusableFrame frame = queue.take();
                 if (frame == END_OF_STREAM) {
                     break;
                 }
-                output.write(frame);
-                writtenFrames.incrementAndGet();
+                try {
+                    output.write(frame.bytes());
+                    writtenFrames.incrementAndGet();
+                } finally {
+                    frame.release();
+                }
             }
             output.flush();
         } catch (IOException exception) {
@@ -229,7 +266,7 @@ final class FFmpegEncoder {
                 if (process != null) {
                     process.destroyForcibly();
                 }
-                queue.clear();
+                drainQueuedFrames();
                 queue.offer(END_OF_STREAM);
             }
         } catch (InterruptedException exception) {
@@ -237,6 +274,35 @@ final class FFmpegEncoder {
             writerFailure.compareAndSet(null, exception);
             if (process != null) {
                 process.destroyForcibly();
+            }
+        }
+    }
+
+    private void replaceLastFrame(ReusableFrame frame) {
+        ReusableFrame previous = lastFrame;
+        if (previous == frame) {
+            return;
+        }
+        frame.retain();
+        lastFrame = frame;
+        if (previous != null) {
+            previous.release();
+        }
+    }
+
+    private void releaseLastFrame() {
+        ReusableFrame previous = lastFrame;
+        lastFrame = null;
+        if (previous != null) {
+            previous.release();
+        }
+    }
+
+    private void drainQueuedFrames() {
+        ReusableFrame queued;
+        while ((queued = queue.poll()) != null) {
+            if (queued != END_OF_STREAM) {
+                queued.release();
             }
         }
     }

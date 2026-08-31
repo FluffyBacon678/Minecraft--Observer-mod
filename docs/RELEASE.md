@@ -11,6 +11,8 @@ This is a beta gate, not a promise that every future 1.21.x build is compatible.
 - Automated builds run the test suite on Java 21 under Linux and Windows.
 - The packaged icon is reduced to a sensible in-game size instead of contributing most of the jar.
 - Camera, config, recording, replay, storage-policy, FFmpeg-command, PiP sizing, and assistant timing support code has automated coverage where it can be tested outside Minecraft.
+- Session cameras are not persisted to world saves; malformed legacy ownership data is discarded safely, cross-player targeting requires operator permission, and control payloads are rate-limited.
+- Recording capture uses bounded reference-counted buffers, and PiP/encoder resources have explicit failure and shutdown cleanup paths.
 - Config writes are crash-resistant and invalid numeric settings recover to defaults.
 
 ## Required before public upload

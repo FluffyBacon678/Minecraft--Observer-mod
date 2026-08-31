@@ -11,6 +11,7 @@ import java.util.UUID;
 
 public final class ObserverPovController {
     private static final int FIND_OBSERVER_RETRY_TICKS = 40;
+    private static UUID cachedOwnedObserver;
 
     private UUID activeObserver;
     private CameraType previousCameraType = CameraType.FIRST_PERSON;
@@ -59,16 +60,28 @@ public final class ObserverPovController {
 
     public static ObserverCameraEntity findOwnedObserver(Minecraft client) {
         if (client == null || client.level == null || client.player == null) {
+            cachedOwnedObserver = null;
             return null;
         }
-        return client.level
+        if (cachedOwnedObserver != null
+                && client.level.getEntity(cachedOwnedObserver) instanceof ObserverCameraEntity cached
+                && cached.isAlive()
+                && isOwnedBy(cached, client.player.getUUID())) {
+            return cached;
+        }
+        ObserverCameraEntity found = client.level
                 .getEntities(ObserverCam.OBSERVER_CAMERA, client.player.getBoundingBox().inflate(160.0), ObserverCameraEntity::isAlive)
                 .stream()
-                .filter(entity -> entity.isOwnedBy(client.player.getUUID())
-                        || entity.getOwnerUuid() == null && (entity.getTargetUuid() == null
-                        || entity.getTargetUuid().equals(client.player.getUUID())))
+                .filter(entity -> isOwnedBy(entity, client.player.getUUID()))
                 .min(Comparator.comparingDouble(entity -> entity.distanceToSqr(client.player)))
                 .orElse(null);
+        cachedOwnedObserver = found == null ? null : found.getUUID();
+        return found;
+    }
+
+    private static boolean isOwnedBy(ObserverCameraEntity observer, UUID playerUuid) {
+        return observer.isOwnedBy(playerUuid)
+                || observer.getOwnerUuid() == null && playerUuid.equals(observer.getTargetUuid());
     }
 
     public void tick(Minecraft client) {
@@ -105,6 +118,7 @@ public final class ObserverPovController {
     }
 
     public void disconnect(Minecraft client) {
+        cachedOwnedObserver = null;
         restore(client, null);
     }
 

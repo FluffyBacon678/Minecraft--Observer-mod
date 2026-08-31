@@ -26,11 +26,11 @@ public final class ObserverCameraManager {
     private ObserverCameraManager() {
     }
 
-    public static ObserverCameraEntity spawnFor(ServerPlayer player) {
+    public static @Nullable ObserverCameraEntity spawnFor(ServerPlayer player) {
         return activateFor(player, cameraConfigFor(player).followTargetAutomatically);
     }
 
-    private static ObserverCameraEntity createFor(ServerPlayer player, boolean following) {
+    private static @Nullable ObserverCameraEntity createFor(ServerPlayer player, boolean following) {
         ServerLevel level = player.level();
         ObserverCameraEntity observer = new ObserverCameraEntity(ObserverCam.OBSERVER_CAMERA, level);
         observer.setOwner(player.getUUID());
@@ -41,11 +41,13 @@ public final class ObserverCameraManager {
         observer.setYRot(player.getYRot());
         if (level.addFreshEntity(observer)) {
             ServerPlayNetworking.send(player, new ObserverSwitchSoundPayload(true));
+            return observer;
         }
-        return observer;
+        observer.discard();
+        return null;
     }
 
-    public static ObserverCameraEntity enableFor(ServerPlayer player) {
+    public static @Nullable ObserverCameraEntity enableFor(ServerPlayer player) {
         return activateFor(player, cameraConfigFor(player).followTargetAutomatically);
     }
 
@@ -97,7 +99,7 @@ public final class ObserverCameraManager {
                 : serverConfigs.getOrDefault(ownerUuid, ObserverCamConfig.get());
     }
 
-    private static ObserverCameraEntity activateFor(ServerPlayer player, boolean following) {
+    private static @Nullable ObserverCameraEntity activateFor(ServerPlayer player, boolean following) {
         List<ObserverCameraEntity> owned = findAllOwnedBy(player.level().getServer(), player.getUUID());
         ObserverCameraEntity existing = owned.stream()
                 .filter(observer -> observer.level() == player.level())

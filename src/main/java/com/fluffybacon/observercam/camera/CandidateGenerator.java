@@ -26,6 +26,8 @@ public final class CandidateGenerator {
     private static final double SECONDARY_SUBJECT_RADIUS = 12.0;
     private static final int MAX_SECONDARY_SUBJECT_CANDIDATES = 10;
     private static final int MAX_SECONDARY_SUBJECTS = 4;
+    private static final int NORMAL_EXPENSIVE_CANDIDATES = 12;
+    private static final int RECOVERY_EXPENSIVE_CANDIDATES = 16;
     private static final double PRIMARY_SUBJECT_WEIGHT = 4.0;
     private static final double MAXIMUM_GROUP_SHIFT = 2.25;
     private static final double MAXIMUM_GROUP_VERTICAL_SHIFT = 0.9;
@@ -70,8 +72,7 @@ public final class CandidateGenerator {
         desiredDistance = Math.max(config.minimumDistance, Math.min(config.maximumDistance, desiredDistance));
 
         Vec3 forward = horizontalUnit(shotForward);
-        Vec3 focus = subjects.compositionFocus();
-        List<CameraCandidate> candidates = new ArrayList<>(18);
+        List<CandidateSeed> seeds = new ArrayList<>(42);
         Vec3 currentCenter = observer.position().add(0.0, 0.5, 0.0);
         Vec3 currentOrigin = currentCenter.add(CameraTransform.forward(observer.getYRot(), observer.getXRot())
                 .scale(CameraTransform.FACE_OFFSET));
@@ -83,21 +84,37 @@ public final class CandidateGenerator {
         for (int index = 0; index < ANGLES.length; index++) {
             double radians = Math.toRadians(ANGLES[index]);
             Vec3 radial = rotateY(forward, radians);
-            addCandidate(candidates, observer, target, subjects, radial, desiredDistance, config.cameraHeight,
-                    desiredDistance, index, previousAngle, ANGLES[index] == 0.0, config);
-            addCandidate(candidates, observer, target, subjects, radial, desiredDistance * 1.18,
+            addSeed(seeds, radial, desiredDistance, config.cameraHeight,
+                    desiredDistance, index, previousAngle, ANGLES[index] == 0.0);
+            addSeed(seeds, radial, desiredDistance * 1.18,
                     config.cameraHeight + 0.75, desiredDistance, index, previousAngle,
-                    ANGLES[index] == 0.0, config);
+                    ANGLES[index] == 0.0);
         }
-        addCandidate(candidates, observer, target, subjects, rotateY(forward, Math.toRadians(-65.0)),
+        addSeed(seeds, rotateY(forward, Math.toRadians(-65.0)),
                 desiredDistance * 0.82, config.cameraHeight - 0.45, desiredDistance,
-                8, previousAngle, false, config);
-        addCandidate(candidates, observer, target, subjects, rotateY(forward, Math.toRadians(65.0)),
+                8, previousAngle, false);
+        addSeed(seeds, rotateY(forward, Math.toRadians(65.0)),
                 desiredDistance * 0.82, config.cameraHeight - 0.45, desiredDistance,
-                9, previousAngle, false, config);
+                9, previousAngle, false);
         if (forceEmergencyRecovery) {
-            addConfinedRecoveryCandidates(candidates, observer, target, subjects, forward,
-                    desiredDistance, previousAngle, config);
+            addConfinedRecoveryCandidates(seeds, forward,
+                    desiredDistance, previousAngle);
+        }
+
+        int expensiveLimit = forceEmergencyRecovery
+                ? RECOVERY_EXPENSIVE_CANDIDATES : NORMAL_EXPENSIVE_CANDIDATES;
+        List<CandidateSeed> shortlist = seeds.stream()
+                .map(seed -> new ScoredSeed(seed, seed.coarseScore(observer, target, subjects)))
+                .filter(scored -> scored.score() > Double.NEGATIVE_INFINITY)
+                .sorted(Comparator.comparingDouble(ScoredSeed::score).reversed())
+                .limit(expensiveLimit)
+                .map(ScoredSeed::seed)
+                .toList();
+        List<CameraCandidate> candidates = new ArrayList<>(shortlist.size());
+        for (CandidateSeed seed : shortlist) {
+            addCandidate(candidates, observer, target, subjects, seed.radial(), seed.distance(),
+                    seed.cameraHeight(), seed.desiredDistance(), seed.angleIndex(), seed.previousAngle(),
+                    seed.frontFacing(), config);
         }
 
         CameraCandidate best = candidates.stream()
@@ -108,25 +125,28 @@ public final class CandidateGenerator {
     }
 
     private static void addConfinedRecoveryCandidates(
-            List<CameraCandidate> candidates,
-            ObserverCameraEntity observer,
-            Entity target,
-            SubjectGroup subjects,
+            List<CandidateSeed> candidates,
             Vec3 forward,
             double desiredDistance,
-            int previousAngle,
-            ObserverCamConfig config
+            int previousAngle
     ) {
         double recoveryDesiredDistance = Math.min(2.1, desiredDistance);
         for (int angle = 0; angle < CONFINED_RECOVERY_ANGLES.length; angle++) {
             Vec3 radial = rotateY(forward, Math.toRadians(CONFINED_RECOVERY_ANGLES[angle]));
             for (double configuredDistance : CONFINED_RECOVERY_DISTANCES) {
                 double distance = Math.min(configuredDistance, Math.max(1.25, desiredDistance));
-                addCandidate(candidates, observer, target, subjects, radial, distance,
+                addSeed(candidates, radial, distance,
                         CONFINED_RECOVERY_HEIGHT, recoveryDesiredDistance,
-                        10 + angle, previousAngle, angle == 0, config);
+                        10 + angle, previousAngle, angle == 0);
             }
         }
+    }
+
+    private static void addSeed(List<CandidateSeed> candidates, Vec3 radial, double distance,
+                                double cameraHeight, double desiredDistance, int angleIndex,
+                                int previousAngle, boolean frontFacing) {
+        candidates.add(new CandidateSeed(radial, distance, cameraHeight, desiredDistance,
+                angleIndex, previousAngle, frontFacing));
     }
 
     private static void addCandidate(
@@ -296,5 +316,31 @@ public final class CandidateGenerator {
         public SubjectGroup withCompositionFocus(Vec3 smoothedFocus) {
             return new SubjectGroup(primaryFocus, smoothedFocus, secondarySubjects);
         }
+    }
+
+    private record CandidateSeed(Vec3 radial, double distance, double cameraHeight,
+                                 double desiredDistance, int angleIndex, int previousAngle,
+                                 boolean frontFacing) {
+        private double coarseScore(ObserverCameraEntity observer, Entity target, SubjectGroup subjects) {
+            Vec3 focus = subjects.compositionFocus();
+            double verticalOffset = cameraHeight - target.getBbHeight() * 0.72;
+            Vec3 center = focus.add(0.0, verticalOffset, 0.0).add(radial.scale(distance));
+            BlockPos block = BlockPos.containing(center);
+            if (!observer.level().hasChunk(block.getX() >> 4, block.getZ() >> 4)) {
+                return Double.NEGATIVE_INFINITY;
+            }
+            AABB bounds = new AABB(center.x - 0.48, center.y - 0.48, center.z - 0.48,
+                    center.x + 0.48, center.y + 0.48, center.z + 0.48);
+            if (!observer.level().noCollision(observer, bounds)) {
+                return Double.NEGATIVE_INFINITY;
+            }
+            double stability = angleIndex == previousAngle ? 6.0 : 0.0;
+            double travelPenalty = observer.position().add(0.0, 0.5, 0.0).distanceTo(center) * 0.08;
+            double distancePenalty = Math.abs(distance - desiredDistance) * 0.15;
+            return stability - travelPenalty - distancePenalty;
+        }
+    }
+
+    private record ScoredSeed(CandidateSeed seed, double score) {
     }
 }

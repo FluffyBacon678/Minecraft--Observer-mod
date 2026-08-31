@@ -24,6 +24,10 @@ All notable user-facing changes to Observer Cam are recorded here.
 - Corrected upside-down auxiliary rendering, conservative disk-cap failures, recording duration padding, and background-capture performance.
 - Made switch feedback owner-only, immediate, silence-trimmed, and independent of Observer distance or the Neutral Creatures volume slider.
 - Kept dance motion render-only so Observer POV and recorded camera geometry remain stable.
+- Prevented session cameras and malformed legacy ownership data from remaining in world saves, and made failed entity insertion/dimension transfer non-destructive.
+- Restricted cross-player retargeting to operators, rate-limited client control packets, and replaced an exclusive interaction redirect with a cooperative argument modifier for better mixin compatibility.
+- Reduced director raycast/collision work with bounded candidate shortlisting and cached subject discovery.
+- Reused reference-counted frame buffers, removed the intermediate full-frame integer copy, terminated failed FFmpeg starts, and released PiP GPU resources on every reset path.
 
 ### Release notes
 
@@ -56,7 +60,7 @@ All notable user-facing changes to Observer Cam are recorded here.
 - PiP capture and texture cleanup are bounded and resilient across reset/disconnect paths.
 - FFmpeg/replay finalizers are time-bounded, terminate interrupted child processes, preserve diagnostics, and recover their UI state after unexpected errors.
 - Replay cleanup requires an exact private ownership marker and UUID session path, rejects symbolic-link substitutions, and never treats unrelated directories as deletion targets.
-- Disk-budget checks run twice per second with 128 MB of stop headroom so the configured recording cap remains conservative under encoder bursts.
+- Disk-budget checks use 256 MB of stop headroom so the configured recording cap remains conservative under encoder bursts without scanning the output directory every few client ticks.
 - Metadata now identifies the project owner, support links, and exact first-beta compatibility.
 
 ### Known limitations

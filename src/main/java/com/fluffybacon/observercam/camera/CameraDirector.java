@@ -8,8 +8,11 @@ import com.fluffybacon.observercam.entity.ObserverCameraManager;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.Vec3;
 
+import java.util.UUID;
+
 public final class CameraDirector {
-    public static final int PLAN_INTERVAL_TICKS = 4;
+    public static final int PLAN_INTERVAL_TICKS = 6;
+    private static final int SUBJECT_REFRESH_INTERVAL_TICKS = 10;
     private static final int FAILED_PLAN_ATTEMPTS_BEFORE_RECOVERY = 10;
     private static final int STALLED_TICKS_BEFORE_RECOVERY = 40;
     private static final double HORIZONTAL_FOCUS_DEAD_ZONE = 0.75;
@@ -33,6 +36,9 @@ public final class CameraDirector {
     private Vec3 compositionFocus;
     private Vec3 shotForward;
     private Vec3 trackedTargetAnchor;
+    private SubjectGroup cachedSubjects;
+    private UUID cachedSubjectTarget;
+    private int nextSubjectRefreshTick;
     private final MotionController motionController = new MotionController();
     private final LineOfSightRecoveryTracker lineOfSightRecovery = new LineOfSightRecoveryTracker();
 
@@ -97,7 +103,16 @@ public final class CameraDirector {
         boolean forceEmergencyRecovery = forcedRecoveryPending
                 || failedPlanAttempts >= FAILED_PLAN_ATTEMPTS_BEFORE_RECOVERY - 1;
         forcedRecoveryPending = false;
-        SubjectGroup subjects = CandidateGenerator.documentarySubjects(observer.level(), target, config);
+        boolean refreshSubjects = cachedSubjects == null
+                || !target.getUUID().equals(cachedSubjectTarget)
+                || observer.tickCount >= nextSubjectRefreshTick
+                || forceEmergencyRecovery;
+        if (refreshSubjects) {
+            cachedSubjects = CandidateGenerator.documentarySubjects(observer.level(), target, config);
+            cachedSubjectTarget = target.getUUID();
+            nextSubjectRefreshTick = observer.tickCount + SUBJECT_REFRESH_INTERVAL_TICKS;
+        }
+        SubjectGroup subjects = cachedSubjects;
         boolean snapComposition = compositionFocus == null
                 || observer.distanceTo(target) > config.emergencyTeleportDistance
                 || compositionFocus.distanceTo(subjects.compositionFocus()) > config.catchUpDistance;

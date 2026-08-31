@@ -7,15 +7,13 @@ import com.fluffybacon.observercam.entity.ObserverCameraEntity;
 import net.minecraft.client.Camera;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.phys.HitResult;
 import org.joml.Matrix4f;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
@@ -43,11 +41,12 @@ public abstract class GameRendererMixin {
         ObserverFrameCapture.captureIfNeeded(true);
     }
 
-    @Redirect(method = "pick", at = @At(value = "INVOKE",
-            target = "Lnet/minecraft/client/player/LocalPlayer;raycastHitResult(FLnet/minecraft/world/entity/Entity;)Lnet/minecraft/world/phys/HitResult;"))
-    private HitResult observercam$pickFromRealPlayer(LocalPlayer player, float partialTick, Entity cameraEntity) {
-        Entity interactionView = cameraEntity instanceof ObserverCameraEntity ? player : cameraEntity;
-        return player.raycastHitResult(partialTick, interactionView);
+    @ModifyArg(method = "pick", at = @At(value = "INVOKE",
+            target = "Lnet/minecraft/client/player/LocalPlayer;raycastHitResult(FLnet/minecraft/world/entity/Entity;)Lnet/minecraft/world/phys/HitResult;"),
+            index = 1)
+    private Entity observercam$pickFromRealPlayer(Entity cameraEntity) {
+        return cameraEntity instanceof ObserverCameraEntity
+                ? Minecraft.getInstance().player : cameraEntity;
     }
 
     @Inject(method = "renderItemInHand", at = @At("HEAD"), cancellable = true)

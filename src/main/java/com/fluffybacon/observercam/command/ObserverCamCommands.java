@@ -10,6 +10,7 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.permissions.Permissions;
 import net.minecraft.server.level.ServerPlayer;
 
 public final class ObserverCamCommands {
@@ -20,6 +21,7 @@ public final class ObserverCamCommands {
         dispatcher.register(Commands.literal("observercam")
                 .then(Commands.literal("summon").executes(ObserverCamCommands::summon))
                 .then(Commands.literal("target")
+                        .requires(source -> source.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER))
                         .then(Commands.argument("player", EntityArgument.player()).executes(ObserverCamCommands::target)))
                 .then(Commands.literal("follow").executes(ObserverCamCommands::follow))
                 .then(Commands.literal("dismiss").executes(ObserverCamCommands::dismiss))
@@ -28,7 +30,10 @@ public final class ObserverCamCommands {
 
     private static int summon(CommandContext<CommandSourceStack> context) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
         ServerPlayer player = context.getSource().getPlayerOrException();
-        ObserverCameraManager.spawnFor(player);
+        if (ObserverCameraManager.spawnFor(player) == null) {
+            context.getSource().sendFailure(Component.translatable("observercam.message.cameraman.spawn_failed"));
+            return 0;
+        }
         context.getSource().sendSuccess(() -> Component.translatable("observercam.message.command.summoned"), false);
         return 1;
     }
@@ -52,6 +57,10 @@ public final class ObserverCamCommands {
         ObserverCameraEntity observer = ObserverCameraManager.findFor(player);
         if (observer == null) {
             observer = ObserverCameraManager.enableFor(player);
+        }
+        if (observer == null) {
+            context.getSource().sendFailure(Component.translatable("observercam.message.cameraman.spawn_failed"));
+            return 0;
         }
         observer.setTarget(player);
         observer.setFollowing(true);

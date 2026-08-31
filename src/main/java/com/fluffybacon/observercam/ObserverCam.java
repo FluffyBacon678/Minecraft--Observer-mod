@@ -6,6 +6,7 @@ import com.fluffybacon.observercam.config.ObserverCamConfig;
 import com.fluffybacon.observercam.entity.ObserverCameraEntity;
 import com.fluffybacon.observercam.entity.ObserverCameraManager;
 import com.fluffybacon.observercam.network.ObserverSwitchSoundPayload;
+import com.fluffybacon.observercam.network.ObserverControlRateLimiter;
 import com.fluffybacon.observercam.network.RestoreViewPayload;
 import com.fluffybacon.observercam.network.SetCameramanEnabledPayload;
 import com.fluffybacon.observercam.network.PulseObserverPayload;
@@ -58,25 +59,41 @@ public final class ObserverCam implements ModInitializer {
         PayloadTypeRegistry.playC2S().register(SetCameramanEnabledPayload.TYPE, SetCameramanEnabledPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(PulseObserverPayload.TYPE, PulseObserverPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(SyncCameraSettingsPayload.TYPE, SyncCameraSettingsPayload.CODEC);
-        ServerPlayNetworking.registerGlobalReceiver(SyncCameraSettingsPayload.TYPE, (payload, context) ->
-                ObserverCameraManager.syncCameraSettings(context.player(), payload.settings()));
+        ServerPlayNetworking.registerGlobalReceiver(SyncCameraSettingsPayload.TYPE, (payload, context) -> {
+            if (ObserverControlRateLimiter.allow(context.player(), ObserverControlRateLimiter.Action.SETTINGS)) {
+                ObserverCameraManager.syncCameraSettings(context.player(), payload.settings());
+            }
+        });
         ServerPlayNetworking.registerGlobalReceiver(SetCameramanEnabledPayload.TYPE, (payload, context) -> {
+            if (!ObserverControlRateLimiter.allow(context.player(), ObserverControlRateLimiter.Action.ENABLE)) {
+                return;
+            }
             if (payload.enabled()) {
-                ObserverCameraManager.enableFor(context.player());
-                context.player().sendSystemMessage(Component.translatable("observercam.message.cameraman.enabled"));
+                if (ObserverCameraManager.enableFor(context.player()) != null) {
+                    context.player().sendSystemMessage(Component.translatable("observercam.message.cameraman.enabled"));
+                } else {
+                    context.player().sendSystemMessage(Component.translatable("observercam.message.cameraman.spawn_failed"));
+                }
             } else {
                 ObserverCameraManager.disableFor(context.player());
                 ServerPlayNetworking.send(context.player(), RestoreViewPayload.INSTANCE);
                 context.player().sendSystemMessage(Component.translatable("observercam.message.cameraman.disabled"));
             }
         });
-        ServerPlayNetworking.registerGlobalReceiver(PulseObserverPayload.TYPE, (payload, context) ->
-                ObserverCameraManager.pulseFor(context.player()));
+        ServerPlayNetworking.registerGlobalReceiver(PulseObserverPayload.TYPE, (payload, context) -> {
+            if (ObserverControlRateLimiter.allow(context.player(), ObserverControlRateLimiter.Action.PULSE)) {
+                ObserverCameraManager.pulseFor(context.player());
+            }
+        });
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
             ObserverCameraManager.disableFor(server, handler.player.getUUID());
             ObserverCameraManager.clearCameraSettings(server, handler.player.getUUID());
+            ObserverControlRateLimiter.clear(server, handler.player.getUUID());
         });
-        ServerLifecycleEvents.SERVER_STOPPED.register(ObserverCameraManager::clearCameraSettings);
+        ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
+            ObserverCameraManager.clearCameraSettings(server);
+            ObserverControlRateLimiter.clear(server);
+        });
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> ObserverCamCommands.register(dispatcher));
     }
 

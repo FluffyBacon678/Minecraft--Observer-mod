@@ -93,7 +93,7 @@ public final class ObserverCameraEntity extends Entity {
                 missingTargetTicks = 0;
                 return;
             }
-            if (!getTargetUuidString().isEmpty() && ++missingTargetTicks > 100) {
+            if (++missingTargetTicks > 100) {
                 discard();
             }
             return;
@@ -121,8 +121,11 @@ public final class ObserverCameraEntity extends Entity {
         }
         Vec3 destination = target.position().add(0.0, 2.0, 0.0).subtract(target.getLookAngle().scale(8.0));
         replacement.snapTo(destination);
-        targetLevel.addFreshEntity(replacement);
-        discard();
+        if (targetLevel.addFreshEntity(replacement)) {
+            discard();
+        } else {
+            replacement.discard();
+        }
     }
 
     public void setTarget(Entity target) {
@@ -316,11 +319,19 @@ public final class ObserverCameraEntity extends Entity {
 
     @Override
     protected void readAdditionalSaveData(ValueInput input) {
-        entityData.set(OWNER_UUID, input.getStringOr("ObserverCamOwner", ""));
-        entityData.set(TARGET_UUID, input.getStringOr("ObserverCamTarget", ""));
-        entityData.set(FOLLOWING, input.getBooleanOr("ObserverCamFollowing", false));
+        String owner = canonicalUuid(input.getStringOr("ObserverCamOwner", ""));
+        String target = canonicalUuid(input.getStringOr("ObserverCamTarget", ""));
+        entityData.set(OWNER_UUID, owner);
+        entityData.set(TARGET_UUID, target);
+        entityData.set(FOLLOWING, !owner.isEmpty() && !target.isEmpty()
+                && input.getBooleanOr("ObserverCamFollowing", false));
         setNoGravity(true);
         setInvulnerable(true);
+    }
+
+    private static String canonicalUuid(String value) {
+        UUID uuid = parseUuid(value);
+        return uuid == null ? "" : uuid.toString();
     }
 
     @Override
@@ -328,6 +339,12 @@ public final class ObserverCameraEntity extends Entity {
         output.putString("ObserverCamOwner", entityData.get(OWNER_UUID));
         output.putString("ObserverCamTarget", getTargetUuidString());
         output.putBoolean("ObserverCamFollowing", isFollowing());
+    }
+
+    /** Observer cameras are session-owned and are recreated when their owner joins. */
+    @Override
+    public boolean shouldBeSaved() {
+        return false;
     }
 
     @Override

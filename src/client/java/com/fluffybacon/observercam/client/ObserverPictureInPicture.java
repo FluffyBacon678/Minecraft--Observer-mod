@@ -40,6 +40,8 @@ public final class ObserverPictureInPicture {
     private static long nextPictureInPictureNanos;
     private static boolean renderingFeed;
     private static boolean frameAvailable;
+    private static boolean releasePending;
+    private static boolean releaseScheduled;
 
     private ObserverPictureInPicture() {
     }
@@ -122,6 +124,9 @@ public final class ObserverPictureInPicture {
         try {
             renderingFeed = true;
             activeRenderTarget = feedTarget;
+            if (client.getMainRenderTarget() != feedTarget) {
+                throw new IllegalStateException("Observer feed render-target hook is unavailable");
+            }
             client.options.setCameraType(CameraType.FIRST_PERSON);
             client.setCameraEntity(observer);
             renderer.updateCamera(deltaTracker);
@@ -131,8 +136,8 @@ public final class ObserverPictureInPicture {
             if (recordingSession >= 0L) {
                 ObserverFrameCapture.captureSecondary(manager, recordingSession, feedTarget);
             }
-        } catch (Throwable throwable) {
-            LOGGER.error("Could not render the shared Observer feed", throwable);
+        } catch (RuntimeException exception) {
+            LOGGER.error("Could not render the shared Observer feed", exception);
             if (recordingSession >= 0L) {
                 manager.failCapture(Component.translatable("observercam.recording.error.capture"));
             } else {
@@ -169,22 +174,17 @@ public final class ObserverPictureInPicture {
         if (ObserverFrameCapture.isCaptureInFlight()) {
             return false;
         }
+        releasePending = false;
         try {
-            if (feedTexture != null && client.getTextureManager().getTexture(TEXTURE_ID) == feedTexture) {
-                client.getTextureManager().release(TEXTURE_ID);
-            }
-            if (feedTarget != null) {
-                feedTarget.destroyBuffers();
-            }
+            releaseTarget(client);
             feedTarget = new TextureTarget("Observer Cam feed", size.width(), size.height(), true);
             feedTexture = new RenderTargetTexture(feedTarget);
             client.getTextureManager().register(TEXTURE_ID, feedTexture);
             frameAvailable = false;
             return true;
-        } catch (Throwable throwable) {
-            LOGGER.error("Could not create the Observer feed render target", throwable);
-            feedTarget = null;
-            feedTexture = null;
+        } catch (RuntimeException exception) {
+            LOGGER.error("Could not create the Observer feed render target", exception);
+            releaseTarget(client);
             frameAvailable = false;
             return false;
         }
@@ -250,6 +250,51 @@ public final class ObserverPictureInPicture {
         frameAvailable = false;
         activeRenderTarget = null;
         renderingFeed = false;
+        releasePending = true;
+        releaseResourcesWhenSafe();
+    }
+
+    /** Called after an asynchronous framebuffer readback releases its source target. */
+    public static void onCaptureFinished() {
+        releaseResourcesWhenSafe();
+    }
+
+    private static void releaseResourcesWhenSafe() {
+        if (!releasePending || releaseScheduled || renderingFeed || ObserverFrameCapture.isCaptureInFlight()) {
+            return;
+        }
+        releaseScheduled = true;
+        Runnable release = () -> {
+            releaseScheduled = false;
+            if (!releasePending || renderingFeed || ObserverFrameCapture.isCaptureInFlight()) {
+                return;
+            }
+            releasePending = false;
+            releaseTarget(Minecraft.getInstance());
+        };
+        if (RenderSystem.isOnRenderThread()) {
+            release.run();
+        } else {
+            Minecraft client = Minecraft.getInstance();
+            if (client == null) {
+                releaseScheduled = false;
+                return;
+            }
+            client.execute(release);
+        }
+    }
+
+    private static void releaseTarget(Minecraft client) {
+        TextureTarget target = feedTarget;
+        RenderTargetTexture texture = feedTexture;
+        feedTarget = null;
+        feedTexture = null;
+        if (client != null && texture != null && client.getTextureManager().getTexture(TEXTURE_ID) == texture) {
+            client.getTextureManager().release(TEXTURE_ID);
+        }
+        if (target != null) {
+            target.destroyBuffers();
+        }
     }
 
     private static void disableAfterFailure() {
