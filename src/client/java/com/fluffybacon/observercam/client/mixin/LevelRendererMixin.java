@@ -1,6 +1,8 @@
 package com.fluffybacon.observercam.client.mixin;
 
+import com.fluffybacon.observercam.client.ObserverPictureInPicture;
 import com.fluffybacon.observercam.entity.ObserverCameraEntity;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Camera;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
@@ -16,10 +18,25 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(LevelRenderer.class)
 public abstract class LevelRendererMixin {
+    private static final boolean OBSERVERCAM$BETTER_CLOUDS_LOADED =
+            FabricLoader.getInstance().isModLoaded("betterclouds");
+
     @Inject(method = "shouldShowEntityOutlines", at = @At("HEAD"), cancellable = true)
     private void observercam$hideOutlinesInAuxiliaryFeed(CallbackInfoReturnable<Boolean> callbackInfo) {
-        if (com.fluffybacon.observercam.client.ObserverPictureInPicture.isRenderingFeed()) {
+        if (ObserverPictureInPicture.isRenderingFeed()) {
             callbackInfo.setReturnValue(false);
+        }
+    }
+
+    /**
+     * Better Clouds owns a size-dependent framebuffer and otherwise rebuilds it every time the
+     * low-resolution Observer pass alternates with the main window. Keep Better Clouds on the main
+     * view, but omit clouds from the auxiliary feed to avoid that allocation and log-spam loop.
+     */
+    @Inject(method = "addCloudsPass", at = @At("HEAD"), cancellable = true)
+    private void observercam$skipBetterCloudsInAuxiliaryFeed(CallbackInfo callbackInfo) {
+        if (OBSERVERCAM$BETTER_CLOUDS_LOADED && ObserverPictureInPicture.isRenderingFeed()) {
+            callbackInfo.cancel();
         }
     }
 
